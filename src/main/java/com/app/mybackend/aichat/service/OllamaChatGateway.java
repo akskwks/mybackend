@@ -51,14 +51,14 @@ public class OllamaChatGateway {
             request.cancel(true);
             throw new AiChatException(
                     "AI_TIMEOUT",
-                    "AI 답변 생성 시간이 초과되었습니다. 질문을 줄이거나 잠시 후 다시 시도해 주세요.",
+                    "AI 답변 생성 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
                     HttpStatus.GATEWAY_TIMEOUT
             );
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new AiChatException(
                     "AI_REQUEST_INTERRUPTED",
-                    "AI 요청이 중단되었습니다. 다시 시도해 주세요.",
+                    "AI 요청이 중단되었습니다. 잠시 후 다시 시도해 주세요.",
                     HttpStatus.SERVICE_UNAVAILABLE
             );
         } catch (ExecutionException exception) {
