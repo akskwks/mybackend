@@ -1,6 +1,7 @@
 package com.app.mybackend.aichat.controller;
 
 import com.app.mybackend.aichat.dto.request.AiConversationCreateRequest;
+import com.app.mybackend.aichat.dto.request.AiConversationUpdateRequest;
 import com.app.mybackend.aichat.dto.request.AiChatRequest;
 import com.app.mybackend.aichat.dto.response.AiChatResponse;
 import com.app.mybackend.aichat.dto.response.AiConversationResponse;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +42,14 @@ public class AiChatController {
     ) {
         AiConversation conversation = conversationService.create(request == null ? null : request.title());
         return AiConversationResponse.from(conversation);
+    }
+
+    @PutMapping("/conversations/{conversationId}")
+    public AiConversationResponse renameConversation(
+            @PathVariable Long conversationId,
+            @Valid @RequestBody AiConversationUpdateRequest request
+    ) {
+        return AiConversationResponse.from(conversationService.rename(conversationId, request.title()));
     }
 
     @GetMapping("/conversations/{conversationId}/messages")

@@ -40,6 +40,13 @@ public class AiConversationService {
         return conversationRepository.save(conversation);
     }
 
+    @Transactional
+    public AiConversation rename(Long conversationId, String title) {
+        AiConversation conversation = findEntity(conversationId);
+        conversation.setTitle(title.trim());
+        return conversationRepository.save(conversation);
+    }
+
     public AiConversation findEntity(Long conversationId) {
         return conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("대화를 찾을 수 없습니다."));
