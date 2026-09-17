@@ -5,6 +5,7 @@ import com.app.mybackend.calendar.entity.CalendarEvent;
 import com.app.mybackend.calendar.repository.CalendarEventRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -17,6 +18,10 @@ public class CalendarEventService {
 
     public List<CalendarEvent> findAll() {
         return repository.findAllByOrderByEventDateAscStartTimeAsc();
+    }
+
+    public List<CalendarEvent> findBetween(LocalDate start, LocalDate end) {
+        return repository.findByEventDateBetweenOrderByEventDateAscStartTimeAsc(start, end);
     }
 
     public CalendarEvent create(CalendarEventRequest request) {

@@ -21,3 +21,26 @@ CREATE TABLE IF NOT EXISTS app_memo (
     updated_at DATETIME(6) NULL,
     PRIMARY KEY (memo_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS app_ai_conversation (
+    conversation_id BIGINT NOT NULL AUTO_INCREMENT,
+    title VARCHAR(120) NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (conversation_id),
+    INDEX idx_ai_conversation_updated_at (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS app_ai_message (
+    message_id BIGINT NOT NULL AUTO_INCREMENT,
+    conversation_id BIGINT NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    content LONGTEXT NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (message_id),
+    INDEX idx_ai_message_conversation (conversation_id, created_at),
+    CONSTRAINT fk_ai_message_conversation
+        FOREIGN KEY (conversation_id)
+        REFERENCES app_ai_conversation (conversation_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

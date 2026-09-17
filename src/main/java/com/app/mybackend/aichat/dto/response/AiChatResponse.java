@@ -1,6 +1,8 @@
 package com.app.mybackend.aichat.dto.response;
 
 public record AiChatResponse(
-        String answer
+        Long conversationId,
+        String answer,
+        AiMessageResponse message
 ) {
 }

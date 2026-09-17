@@ -5,6 +5,7 @@ import com.app.mybackend.memo.entity.Memo;
 import com.app.mybackend.memo.repository.MemoRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -26,6 +27,10 @@ public class MemoService {
     public Memo findById(Long memoId) {
         return repository.findById(memoId)
                 .orElseThrow(() -> new RuntimeException("메모를 찾을 수 없습니다."));
+    }
+
+    public List<Memo> findUpdatedBetween(LocalDateTime start, LocalDateTime end) {
+        return repository.findByUpdatedAtGreaterThanEqualAndUpdatedAtLessThanOrderByUpdatedAtDesc(start, end);
     }
 
     public Memo create(MemoRequest request) {

@@ -47,3 +47,7 @@ server:
 logging:
   level:
     org.hibernate.SQL: debug
+
+myapp:
+  ai:
+    timeout-seconds: 90
