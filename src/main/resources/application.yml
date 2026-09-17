@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: mybackend
+
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://127.0.0.1:3306/myappdb
+    username: my_app
+    password: change_me
+
+    hikari:
+      pool-name: AppHikariPool
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  jpa:
+    open-in-view: false
+
+    hibernate:
+      ddl-auto: update
+
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+
+  ai:
+    model:
+      chat: ollama
+
+    ollama:
+      base-url: http://localhost:11434
+
+      chat:
+        model: ${OLLAMA_CHAT_MODEL:qwen2.5:latest}
+        temperature: 0.2
+        num-ctx: 8192
+        keep-alive: 10m
+
+      init:
+        pull-model-strategy: never
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.hibernate.SQL: debug
