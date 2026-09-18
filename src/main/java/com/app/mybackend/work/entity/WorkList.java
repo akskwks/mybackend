@@ -33,9 +33,6 @@ public class WorkList {
     @Column(name = "work_status", length = 20, nullable = false)
     private String workStatus;
 
-    @Column(name = "work_progress", nullable = false)
-    private int workProgress;
-
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

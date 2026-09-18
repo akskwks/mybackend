@@ -61,7 +61,6 @@ public class WorkListService {
         workList.setWorkTitle(request.workTitle());
         workList.setWorkCnnt(request.workCnnt());
         workList.setWorkStatus(request.workStatus());
-        workList.setWorkProgress(request.workProgress());
     }
 
     private void validate(WorkListRequest request) {
@@ -79,12 +78,6 @@ public class WorkListService {
 
         if (!STATUSES.contains(request.workStatus())) {
             throw new IllegalArgumentException("올바르지 않은 업무 상태입니다.");
-        }
-
-        if (request.workProgress() == null
-                || request.workProgress() < 0
-                || request.workProgress() > 100) {
-            throw new IllegalArgumentException("진행률은 0부터 100 사이여야 합니다.");
         }
     }
 

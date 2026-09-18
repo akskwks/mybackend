@@ -7,7 +7,6 @@ public record WorkListRequest(
         LocalDate workDate,
         String workTitle,
         String workCnnt,
-        String workStatus,
-        Integer workProgress
+        String workStatus
 ) {
 }
