@@ -44,3 +44,22 @@ CREATE TABLE IF NOT EXISTS app_ai_message (
         REFERENCES app_ai_conversation (conversation_id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS app_work (
+    work_id BIGINT NOT NULL AUTO_INCREMENT,
+    work_date DATE NOT NULL,
+    work_title VARCHAR(100) NOT NULL,
+    work_cnnt VARCHAR(10000) NULL,
+    work_status VARCHAR(20) NOT NULL,
+    work_progress INT NOT NULL DEFAULT 0,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (work_id),
+    INDEX idx_app_work_date (work_date),
+    INDEX idx_app_work_status (work_status),
+    CONSTRAINT chk_app_work_progress
+        CHECK (work_progress BETWEEN 0 AND 100)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
