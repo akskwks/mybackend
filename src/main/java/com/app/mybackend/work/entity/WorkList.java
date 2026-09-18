@@ -11,12 +11,15 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Table(name = "app_work")
-public class Work {
+public class WorkList {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "work_id")
+    @Column(name = "work_id", nullable = false)
     private Long workId;
+
+    @Column(name = "project_id", nullable = false)
+    private Long projectId;
 
     @Column(name = "work_date", nullable = false)
     private LocalDate workDate;

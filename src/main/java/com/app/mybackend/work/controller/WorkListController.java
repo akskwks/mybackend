@@ -1,8 +1,8 @@
 package com.app.mybackend.work.controller;
 
-import com.app.mybackend.work.dto.WorkRequest;
-import com.app.mybackend.work.entity.Work;
-import com.app.mybackend.work.service.WorkService;
+import com.app.mybackend.work.dto.WorkListRequest;
+import com.app.mybackend.work.entity.WorkList;
+import com.app.mybackend.work.service.WorkListService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,35 +11,36 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/works")
-public class WorkController {
+public class WorkListController {
 
-    private final WorkService service;
+    private final WorkListService service;
 
-    public WorkController(WorkService service) {
+    public WorkListController(WorkListService service) {
         this.service = service;
     }
 
     @GetMapping
-    public List<Work> findAll(
+    public List<WorkList> findAll(
+            @RequestParam Long projectId,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
-        return service.findAll(date);
+        return service.findAll(projectId, date);
     }
 
     @GetMapping("/{workId}")
-    public Work findById(@PathVariable Long workId) {
+    public WorkList findById(@PathVariable Long workId) {
         return service.findById(workId);
     }
 
     @PostMapping
-    public Work create(@RequestBody WorkRequest request) {
+    public WorkList create(@RequestBody WorkListRequest request) {
         return service.create(request);
     }
 
     @PutMapping("/{workId}")
-    public Work update(@PathVariable Long workId, @RequestBody WorkRequest request) {
+    public WorkList update(@PathVariable Long workId, @RequestBody WorkListRequest request) {
         return service.update(workId, request);
     }
 

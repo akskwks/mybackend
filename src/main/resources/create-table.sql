@@ -63,3 +63,20 @@ CREATE TABLE IF NOT EXISTS app_work (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS app_project (
+    project_id BIGINT NOT NULL AUTO_INCREMENT,
+    work_environment VARCHAR(20) NOT NULL,
+    project_name VARCHAR(100) NOT NULL,
+    project_status VARCHAR(20) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (project_id),
+    INDEX idx_work_project_environment (work_environment),
+    INDEX idx_work_project_status (project_status)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
