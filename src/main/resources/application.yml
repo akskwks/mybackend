@@ -41,6 +41,11 @@ spring:
       init:
         pull-model-strategy: never
 
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 100MB
+
 server:
   port: 8080
 
@@ -51,3 +56,5 @@ logging:
 myapp:
   ai:
     timeout-seconds: 90
+  file:
+    upload-dir: ${MYAPP_UPLOAD_DIR:./uploads/work}

@@ -46,25 +46,6 @@ CREATE TABLE IF NOT EXISTS app_ai_message (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-CREATE TABLE IF NOT EXISTS app_work (
-    work_id BIGINT NOT NULL AUTO_INCREMENT,
-    work_date DATE NOT NULL,
-    work_title VARCHAR(100) NOT NULL,
-    work_cnnt VARCHAR(10000) NULL,
-    work_status VARCHAR(20) NOT NULL,
-    work_progress INT NOT NULL DEFAULT 0,
-    created_at DATETIME(6) NOT NULL,
-    updated_at DATETIME(6) NOT NULL,
-    PRIMARY KEY (work_id),
-    INDEX idx_app_work_date (work_date),
-    INDEX idx_app_work_status (work_status),
-    CONSTRAINT chk_app_work_progress
-        CHECK (work_progress BETWEEN 0 AND 100)
-) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci;
-
-
 CREATE TABLE IF NOT EXISTS app_project (
     project_id BIGINT NOT NULL AUTO_INCREMENT,
     work_environment VARCHAR(20) NOT NULL,
@@ -77,6 +58,46 @@ CREATE TABLE IF NOT EXISTS app_project (
     PRIMARY KEY (project_id),
     INDEX idx_work_project_environment (work_environment),
     INDEX idx_work_project_status (project_status)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS app_work (
+    work_id BIGINT NOT NULL AUTO_INCREMENT,
+    project_id BIGINT NOT NULL,
+    work_date DATE NOT NULL,
+    work_title VARCHAR(100) NOT NULL,
+    work_cnnt VARCHAR(10000) NULL,
+    work_status VARCHAR(20) NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (work_id),
+    INDEX idx_app_work_project_id (project_id),
+    INDEX idx_app_work_date (work_date),
+    INDEX idx_app_work_status (work_status),
+    CONSTRAINT fk_app_work_project
+        FOREIGN KEY (project_id)
+        REFERENCES app_project (project_id)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS app_work_file (
+    work_file_id BIGINT NOT NULL AUTO_INCREMENT,
+    work_id BIGINT NOT NULL,
+    orgn_file_name VARCHAR(255) NOT NULL,
+    sv_file_name VARCHAR(100) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    file_extension VARCHAR(30) NOT NULL,
+    mime_type VARCHAR(150) NOT NULL,
+    file_size BIGINT NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (work_file_id),
+    INDEX idx_app_work_file_work_id (work_id),
+    CONSTRAINT fk_app_work_file_work
+        FOREIGN KEY (work_id)
+        REFERENCES app_work (work_id)
+        ON DELETE CASCADE
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
