@@ -17,11 +17,13 @@ public class MemoService {
     }
 
     public List<Memo> findAll(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return repository.findAllByOrderByUpdatedAtDesc();
-        }
+        return findAll(keyword, null);
+    }
 
-        return repository.findByMemoTitleContainingIgnoreCaseOrMemoCnntContainingIgnoreCaseOrderByUpdatedAtDesc(keyword, keyword);
+    public List<Memo> findAll(String keyword, String memoSort) {
+        String normalizedKeyword = normalize(keyword);
+        String normalizedMemoSort = normalize(memoSort);
+        return repository.search(normalizedKeyword, normalizedMemoSort);
     }
 
     public Memo findById(Long memoId) {
@@ -54,5 +56,9 @@ public class MemoService {
         memo.setMemoTitle(request.memoTitle());
         memo.setMemoCnnt(request.memoCnnt());
         memo.setMemoSort(request.memoSort());
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

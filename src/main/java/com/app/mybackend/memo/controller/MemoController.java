@@ -17,8 +17,11 @@ public class MemoController {
     }
 
     @GetMapping
-    public List<Memo> findAll(@RequestParam(required = false) String keyword) {
-        return service.findAll(keyword);
+    public List<Memo> findAll(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String memoSort
+    ) {
+        return service.findAll(keyword, memoSort);
     }
 
     @GetMapping("/{memoId}")
