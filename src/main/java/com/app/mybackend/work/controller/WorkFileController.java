@@ -2,6 +2,7 @@ package com.app.mybackend.work.controller;
 
 import com.app.mybackend.work.entity.WorkFile;
 import com.app.mybackend.work.service.WorkFileService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -13,13 +14,10 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/work-files")
+@RequiredArgsConstructor
 public class WorkFileController {
 
     private final WorkFileService workFileService;
-
-    public WorkFileController(WorkFileService workFileService) {
-        this.workFileService = workFileService;
-    }
 
     @GetMapping("/{workFileId}/content")
     public ResponseEntity<Resource> content(@PathVariable Long workFileId) {

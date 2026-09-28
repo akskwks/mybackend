@@ -3,6 +3,7 @@ package com.app.mybackend.work.service;
 import com.app.mybackend.work.dto.WorkFileResponse;
 import com.app.mybackend.work.entity.WorkFile;
 import com.app.mybackend.work.repository.WorkFileRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,17 +18,13 @@ import java.util.Collection;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class WorkFileService {
 
     private static final int MAX_FILES_PER_REQUEST = 20;
 
     private final WorkFileRepository workFileRepository;
     private final WorkFileStorageService workFileStorageService;
-
-    public WorkFileService(WorkFileRepository workFileRepository, WorkFileStorageService workFileStorageService) {
-        this.workFileRepository = workFileRepository;
-        this.workFileStorageService = workFileStorageService;
-    }
 
     @Transactional(readOnly = true)
     public List<WorkFileResponse> findAll(Long workId) {

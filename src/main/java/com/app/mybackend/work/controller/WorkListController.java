@@ -5,6 +5,7 @@ import com.app.mybackend.work.dto.WorkListRequest;
 import com.app.mybackend.work.entity.WorkList;
 import com.app.mybackend.work.service.WorkFileService;
 import com.app.mybackend.work.service.WorkListService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -15,15 +16,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/works")
+@RequiredArgsConstructor
 public class WorkListController {
 
     private final WorkListService service;
     private final WorkFileService workFileService;
-
-    public WorkListController(WorkListService service, WorkFileService workFileService) {
-        this.service = service;
-        this.workFileService = workFileService;
-    }
 
     @GetMapping
     public List<WorkList> findAll(

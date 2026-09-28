@@ -3,19 +3,17 @@ package com.app.mybackend.work.controller;
 import com.app.mybackend.work.dto.ProjectListRequest;
 import com.app.mybackend.work.entity.ProjectList;
 import com.app.mybackend.work.service.ProjectListService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/projects")
+@RequiredArgsConstructor
 public class ProjectListController {
 
     private final ProjectListService projectListService;
-
-    public ProjectListController(ProjectListService projectListService) {
-        this.projectListService = projectListService;
-    }
 
     @GetMapping
     public List<ProjectList> findAll() {

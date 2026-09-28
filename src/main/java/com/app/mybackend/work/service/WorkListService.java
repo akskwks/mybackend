@@ -3,6 +3,7 @@ package com.app.mybackend.work.service;
 import com.app.mybackend.work.dto.WorkListRequest;
 import com.app.mybackend.work.entity.WorkList;
 import com.app.mybackend.work.repository.WorkListRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class WorkListService {
 
     private static final Set<String> STATUSES =
@@ -21,11 +23,6 @@ public class WorkListService {
 
     private final WorkListRepository repository;
     private final WorkFileService workFileService;
-
-    public WorkListService(WorkListRepository workListRepository, WorkFileService workFileService) {
-        this.repository = workListRepository;
-        this.workFileService = workFileService;
-    }
 
     @Transactional(readOnly = true)
     public List<WorkList> findAll(Long projectId, LocalDate date) {

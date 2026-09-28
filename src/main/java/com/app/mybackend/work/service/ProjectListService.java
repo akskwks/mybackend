@@ -4,6 +4,7 @@ import com.app.mybackend.work.dto.ProjectListRequest;
 import com.app.mybackend.work.entity.ProjectList;
 import com.app.mybackend.work.repository.ProjectListRepository;
 import com.app.mybackend.work.repository.WorkListRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class ProjectListService {
 
     private static final Set<String> ENVIRONMENTS =
@@ -22,11 +24,6 @@ public class ProjectListService {
 
     private final ProjectListRepository projectListRepository;
     private final WorkListRepository workListRepository;
-
-    public ProjectListService(ProjectListRepository projectListRepository, WorkListRepository workListRepository) {
-        this.projectListRepository = projectListRepository;
-        this.workListRepository = workListRepository;
-    }
 
     public List<ProjectList> findAll() {
         return projectListRepository.findAllByOrderByUpdatedAtDesc();
