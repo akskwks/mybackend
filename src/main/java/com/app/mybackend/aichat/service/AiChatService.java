@@ -1,8 +1,6 @@
 package com.app.mybackend.aichat.service;
 
 import com.app.mybackend.aichat.dto.request.AiChatRequest;
-import com.app.mybackend.aichat.dto.response.AiChatResponse;
-import com.app.mybackend.aichat.dto.response.AiMessageResponse;
 import com.app.mybackend.aichat.entity.AiConversation;
 import com.app.mybackend.aichat.entity.AiMessage;
 import org.springframework.stereotype.Service;
@@ -23,7 +21,7 @@ public class AiChatService {
         this.assistantService = assistantService;
     }
 
-    public AiChatResponse chat(AiChatRequest request) {
+    public PreparedChat prepare(AiChatRequest request) {
         AiConversation conversation = request.conversationId() == null
                 ? conversationService.create(request.message())
                 : conversationService.findEntity(request.conversationId());
@@ -31,13 +29,22 @@ public class AiChatService {
 
         conversationService.append(conversation.getConversationId(), "user", request.message());
         conversationService.applyFirstMessageTitle(conversation, request.message());
-        String answer = assistantService.respond(request.message(), history);
-        AiMessage savedAnswer = conversationService.append(conversation.getConversationId(), "assistant", answer);
+        return new PreparedChat(conversation.getConversationId(), request.message(), List.copyOf(history));
+    }
 
-        return new AiChatResponse(
-                conversation.getConversationId(),
-                answer,
-                AiMessageResponse.from(savedAnswer)
-        );
+    public AiMessage complete(PreparedChat chat) {
+        String answer = assistantService.respond(chat.message(), chat.history());
+        return appendAssistant(chat.conversationId(), answer);
+    }
+
+    public AiMessage appendAssistant(Long conversationId, String content) {
+        return conversationService.append(conversationId, "assistant", content);
+    }
+
+    public record PreparedChat(
+            Long conversationId,
+            String message,
+            List<AiMessage> history
+    ) {
     }
 }

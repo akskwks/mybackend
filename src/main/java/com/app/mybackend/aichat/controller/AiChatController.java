@@ -3,15 +3,17 @@ package com.app.mybackend.aichat.controller;
 import com.app.mybackend.aichat.dto.request.AiConversationCreateRequest;
 import com.app.mybackend.aichat.dto.request.AiConversationUpdateRequest;
 import com.app.mybackend.aichat.dto.request.AiChatRequest;
-import com.app.mybackend.aichat.dto.response.AiChatResponse;
+import com.app.mybackend.aichat.dto.response.AiChatJobResponse;
 import com.app.mybackend.aichat.dto.response.AiConversationResponse;
 import com.app.mybackend.aichat.dto.response.AiMessageResponse;
 import com.app.mybackend.aichat.entity.AiConversation;
-import com.app.mybackend.aichat.service.AiChatService;
+import com.app.mybackend.aichat.service.AiChatJobService;
 import com.app.mybackend.aichat.service.AiConversationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +30,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiChatController {
 
-    private final AiChatService aiChatService;
+    private final AiChatJobService chatJobService;
     private final AiConversationService conversationService;
 
     @GetMapping("/conversations")
@@ -59,14 +61,25 @@ public class AiChatController {
 
     @DeleteMapping("/conversations/{conversationId}")
     public ResponseEntity<Void> deleteConversation(@PathVariable Long conversationId) {
+        if (chatJobService.isProcessing(conversationId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "답변 생성 중인 대화는 삭제할 수 없습니다."
+            );
+        }
         conversationService.delete(conversationId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/chat")
-    public ResponseEntity<AiChatResponse> chat(
+    public ResponseEntity<AiChatJobResponse> chat(
             @Valid @RequestBody AiChatRequest request
     ) {
-        return ResponseEntity.ok(aiChatService.chat(request));
+        return ResponseEntity.accepted().body(chatJobService.start(request));
+    }
+
+    @GetMapping("/chat/{requestId}")
+    public AiChatJobResponse chatStatus(@PathVariable String requestId) {
+        return chatJobService.find(requestId);
     }
 }

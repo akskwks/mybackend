@@ -12,6 +12,8 @@ public interface WorkListRepository extends JpaRepository<WorkList, Long> {
     List<WorkList> findByProjectIdAndWorkDateOrderByUpdatedAt(Long projectId, LocalDate workDate);
 
     boolean existsByProjectId(Long projectId);
+
+    long countByProjectId(Long projectId);
 }
 
 

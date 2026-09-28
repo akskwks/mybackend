@@ -31,28 +31,36 @@ public class AiAssistantService {
     private final OllamaChatGateway ollamaChatGateway;
     private final CalendarEventService calendarEventService;
     private final MemoService memoService;
+    private final ProjectWorkAiAssistant projectWorkAssistant;
 
     public AiAssistantService(
             AiIntentService intentService,
             AiPromptService promptService,
             OllamaChatGateway ollamaChatGateway,
             CalendarEventService calendarEventService,
-            MemoService memoService
+            MemoService memoService,
+            ProjectWorkAiAssistant projectWorkAssistant
     ) {
         this.intentService = intentService;
         this.promptService = promptService;
         this.ollamaChatGateway = ollamaChatGateway;
         this.calendarEventService = calendarEventService;
         this.memoService = memoService;
+        this.projectWorkAssistant = projectWorkAssistant;
     }
 
     public String respond(String message, List<AiMessage> history) {
-        return switch (intentService.detect(message)) {
+        AiIntentService.Intent intent = intentService.detect(message, history);
+        if (projectWorkAssistant.supports(intent)) {
+            return projectWorkAssistant.respond(intent, message, history);
+        }
+        return switch (intent) {
             case CALENDAR_QUERY -> answerCalendarQuery(message, history);
             case CALENDAR_CREATE -> createCalendarEvent(message);
             case MEMO_SEARCH -> searchMemos(message);
             case MEMO_SUMMARY -> summarizeMemos(message, history);
             case GENERAL_CHAT -> askOllama(message, history, "");
+            default -> throw new IllegalStateException("처리되지 않은 AI 의도입니다: " + intent);
         };
     }
 

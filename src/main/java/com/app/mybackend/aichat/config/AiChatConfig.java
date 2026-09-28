@@ -13,4 +13,9 @@ public class AiChatConfig {
     public ExecutorService aiChatExecutor() {
         return Executors.newFixedThreadPool(2);
     }
+
+    @Bean(destroyMethod = "shutdown")
+    public ExecutorService aiRequestExecutor() {
+        return Executors.newFixedThreadPool(4);
+    }
 }

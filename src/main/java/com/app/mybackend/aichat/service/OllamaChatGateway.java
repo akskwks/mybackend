@@ -3,6 +3,7 @@ package com.app.mybackend.aichat.service;
 import com.app.mybackend.aichat.exception.AiChatException;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ public class OllamaChatGateway {
 
     public OllamaChatGateway(
             ChatClient.Builder chatClientBuilder,
+            @Qualifier("aiChatExecutor")
             ExecutorService aiChatExecutor,
             @Value("${myapp.ai.timeout-seconds:90}") long timeoutSeconds
     ) {
