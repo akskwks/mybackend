@@ -3,18 +3,17 @@ package com.app.mybackend.memo.controller;
 import com.app.mybackend.memo.dto.MemoRequest;
 import com.app.mybackend.memo.entity.Memo;
 import com.app.mybackend.memo.service.MemoService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/memos")
+@RequiredArgsConstructor
 public class MemoController {
-    private final MemoService service;
 
-    public MemoController(MemoService service) {
-        this.service = service;
-    }
+    private final MemoService service;
 
     @GetMapping
     public List<Memo> findAll(
