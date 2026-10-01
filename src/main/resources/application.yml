@@ -54,6 +54,7 @@ logging:
     org.hibernate.SQL: debug
 
 myapp:
+  frontend-base-url: ${MYAPP_FRONTEND_URL:http://localhost:5173}
   ai:
     timeout-seconds: 90
   file:
