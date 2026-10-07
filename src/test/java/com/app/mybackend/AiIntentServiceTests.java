@@ -47,4 +47,26 @@ class AiIntentServiceTests {
                 service.detect("진행중이야", List.of(assistant))
         );
     }
+
+    @Test
+    void recognizesShortCalendarAndMemoQueries() {
+        assertEquals(Intent.CALENDAR_QUERY, service.detect("내일 일정"));
+        assertEquals(Intent.CALENDAR_QUERY, service.detect("모레 일정"));
+        assertEquals(Intent.CALENDAR_QUERY, service.detect("일주일 뒤 일정"));
+        assertEquals(Intent.MEMO_SEARCH, service.detect("어제 메모"));
+        assertEquals(Intent.MEMO_SEARCH, service.detect("그저께 작성한 메모"));
+        assertEquals(Intent.MEMO_SEARCH, service.detect("지난주 메모"));
+        assertEquals(Intent.MEMO_SEARCH, service.detect("Docker 관련 메모"));
+        assertEquals(Intent.MEMO_SEARCH, service.detect("TODO 메모"));
+        assertEquals(Intent.MEMO_SEARCH, service.detect("지난주 프로젝트 관련 메모"));
+        assertEquals(Intent.CALENDAR_QUERY, service.detect("내일 프로젝트 회의 일정"));
+    }
+
+    @Test
+    void recognizesProjectScopeWithoutCommandVerbs() {
+        assertEquals(Intent.PROJECT_LIST_QUERY, service.detect("이번 주 프로젝트"));
+        assertEquals(Intent.PROJECT_PERIOD_QUERY, service.detect("MyApp 프로젝트 기간"));
+        assertEquals(Intent.PROJECT_WORK_QUERY, service.detect("MyApp 주요 업무"));
+        assertEquals(Intent.GENERAL_CHAT, service.detect("Spring Boot JPA가 뭐야?"));
+    }
 }

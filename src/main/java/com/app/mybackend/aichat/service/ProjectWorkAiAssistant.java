@@ -57,6 +57,7 @@ public class ProjectWorkAiAssistant {
             """;
 
     private final ProjectWorkAiTool tool;
+    private final AiDateExpressionService dateExpressionService;
 
     public boolean supports(Intent intent) {
         return SUPPORTED_INTENTS.contains(intent);
@@ -65,7 +66,7 @@ public class ProjectWorkAiAssistant {
     public String respond(Intent intent, String message, List<AiMessage> history) {
         try {
             return switch (intent) {
-                case PROJECT_LIST_QUERY -> listProjects();
+                case PROJECT_LIST_QUERY -> listProjects(message);
                 case PROJECT_DETAIL_QUERY -> projectDetail(message);
                 case PROJECT_PERIOD_QUERY -> projectPeriod(message);
                 case PROJECT_WORK_QUERY -> projectWorks(message);
@@ -84,11 +85,23 @@ public class ProjectWorkAiAssistant {
         }
     }
 
-    private String listProjects() {
+    private String listProjects(String message) {
         List<ProjectList> projects = tool.findProjects();
-        if (projects.isEmpty()) return "현재 등록된 프로젝트가 없습니다.";
+        AiDateExpressionService.DateSelection period = dateExpressionService.resolve(message);
+        if (period != null) {
+            projects = projects.stream()
+                    .filter(project -> !project.getEndDate().isBefore(period.start())
+                            && !project.getStartDate().isAfter(period.end()))
+                    .toList();
+        }
+        if (projects.isEmpty()) {
+            return period == null ? "현재 등록된 프로젝트가 없습니다."
+                    : "%s에 해당하는 프로젝트가 없습니다.".formatted(period.expression());
+        }
 
-        StringBuilder answer = new StringBuilder("현재 등록된 프로젝트 목록입니다.\n");
+        StringBuilder answer = new StringBuilder(period == null
+                ? "현재 등록된 프로젝트 목록입니다.\n"
+                : "%s에 해당하는 프로젝트 목록입니다.\n".formatted(period.expression()));
         for (ProjectList project : projects) {
             answer.append("\n**").append(project.getProjectName()).append("**\n")
                     .append("- 프로젝트 기간: ").append(project.getStartDate()).append(" ~ ")
@@ -129,6 +142,14 @@ public class ProjectWorkAiAssistant {
         if (!selection.resolved()) return selection.message();
         ProjectList project = selection.project();
         List<WorkList> works = tool.findWorks(project.getProjectId());
+        AiDateExpressionService.DateSelection period = dateExpressionService.resolve(message);
+        if (period != null) {
+            works = works.stream()
+                    .filter(work -> work.getWorkDate() != null
+                            && !work.getWorkDate().isBefore(period.start())
+                            && !work.getWorkDate().isAfter(period.end()))
+                    .toList();
+        }
         if (works.isEmpty()) return "%s 프로젝트에 등록된 업무가 없습니다.".formatted(project.getProjectName());
 
         StringBuilder answer = new StringBuilder(project.getProjectName())
@@ -401,8 +422,8 @@ public class ProjectWorkAiAssistant {
     }
 
     private LocalDate parseWorkDate(String message) {
-        if (message.contains("오늘")) return LocalDate.now();
-        if (message.contains("내일")) return LocalDate.now().plusDays(1);
+        AiDateExpressionService.DateSelection selection = dateExpressionService.resolve(message);
+        if (selection != null && selection.isSingleDay()) return selection.start();
         List<LocalDate> dates = parseDates(message);
         return dates.isEmpty() ? null : dates.get(0);
     }

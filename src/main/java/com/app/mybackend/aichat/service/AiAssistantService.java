@@ -9,11 +9,9 @@ import com.app.mybackend.memo.service.MemoService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -21,10 +19,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class AiAssistantService {
-    private static final Pattern ISO_DATE = Pattern.compile("(20\\d{2})[-./](\\d{1,2})[-./](\\d{1,2})");
-    private static final Pattern MONTH_DAY = Pattern.compile("(\\d{1,2})월\\s*(\\d{1,2})일");
     private static final Pattern TIME = Pattern.compile("(오전|오후)?\\s*(\\d{1,2})\\s*시(?:\\s*(\\d{1,2})\\s*분)?");
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final AiIntentService intentService;
     private final AiPromptService promptService;
@@ -32,6 +27,7 @@ public class AiAssistantService {
     private final CalendarEventService calendarEventService;
     private final MemoService memoService;
     private final ProjectWorkAiAssistant projectWorkAssistant;
+    private final AiDateExpressionService dateExpressionService;
 
     public AiAssistantService(
             AiIntentService intentService,
@@ -39,7 +35,8 @@ public class AiAssistantService {
             OllamaChatGateway ollamaChatGateway,
             CalendarEventService calendarEventService,
             MemoService memoService,
-            ProjectWorkAiAssistant projectWorkAssistant
+            ProjectWorkAiAssistant projectWorkAssistant,
+            AiDateExpressionService dateExpressionService
     ) {
         this.intentService = intentService;
         this.promptService = promptService;
@@ -47,6 +44,7 @@ public class AiAssistantService {
         this.calendarEventService = calendarEventService;
         this.memoService = memoService;
         this.projectWorkAssistant = projectWorkAssistant;
+        this.dateExpressionService = dateExpressionService;
     }
 
     public String respond(String message, List<AiMessage> history) {
@@ -55,7 +53,7 @@ public class AiAssistantService {
             return projectWorkAssistant.respond(intent, message, history);
         }
         return switch (intent) {
-            case CALENDAR_QUERY -> answerCalendarQuery(message, history);
+            case CALENDAR_QUERY -> answerCalendarQuery(message);
             case CALENDAR_CREATE -> createCalendarEvent(message);
             case MEMO_SEARCH -> searchMemos(message);
             case MEMO_SUMMARY -> summarizeMemos(message, history);
@@ -64,26 +62,41 @@ public class AiAssistantService {
         };
     }
 
-    private String answerCalendarQuery(String message, List<AiMessage> history) {
-        DateRange range = calendarRange(message);
+    private String answerCalendarQuery(String message) {
+        AiDateExpressionService.DateSelection range = dateExpressionService.resolve(message);
+        if (range == null) {
+            LocalDate today = LocalDate.now();
+            range = new AiDateExpressionService.DateSelection(today, today, "오늘");
+        }
         List<CalendarEvent> events = calendarEventService.findBetween(range.start(), range.end());
         if (events.isEmpty()) {
-            return "%s부터 %s까지 등록된 일정이 없습니다."
-                    .formatted(range.start().format(DATE_FORMAT), range.end().format(DATE_FORMAT));
+            String label = range.expression();
+            if (label.matches("20\\d{2}[-./].*|\\d{1,2}월.*")) label += "에";
+            return "%s 예정된 일정이 없습니다.".formatted(label);
         }
 
-        String data = events.stream()
-                .map(event -> "- %s %s-%s | %s | %s | %s".formatted(
-                        event.getEventDate(),
-                        event.getStartTime(),
-                        event.getEndTime(),
-                        event.getEventTitle(),
-                        valueOrEmpty(event.getEventCatg()),
-                        valueOrEmpty(event.getEvent_dsc())
-                ))
-                .reduce((left, right) -> left + "\n" + right)
-                .orElse("");
-        return askOllama(message, history, "[캘린더 조회 결과]\n" + data);
+        if (events.size() == 1) {
+            return "%s 일정은 %s가 예정되어 있습니다.".formatted(
+                    range.expression(), formatCalendarEvent(events.get(0), !range.isSingleDay()));
+        }
+        StringBuilder answer = new StringBuilder(range.expression()).append(" 일정은 다음과 같습니다.\n\n");
+        for (CalendarEvent event : events) {
+            answer.append("- ").append(formatCalendarEvent(event, !range.isSingleDay())).append('\n');
+        }
+        return answer.toString().trim();
+    }
+
+    private String formatCalendarEvent(CalendarEvent event, boolean includeDate) {
+        StringBuilder item = new StringBuilder();
+        if (includeDate && event.getEventDate() != null) {
+            item.append(event.getEventDate()).append(' ');
+        }
+        if (event.getStartTime() != null) {
+            item.append(event.getStartTime());
+            if (event.getEndTime() != null) item.append('-').append(event.getEndTime());
+            item.append(' ');
+        }
+        return item.append(event.getEventTitle()).toString();
     }
 
     private String createCalendarEvent(String message) {
@@ -122,12 +135,19 @@ public class AiAssistantService {
 
     private String searchMemos(String message) {
         String keyword = extractMemoKeyword(message);
+        AiDateExpressionService.DateSelection date = dateExpressionService.resolve(message);
         List<Memo> memos = memoService.findAll(keyword).stream()
+                .filter(memo -> date == null || (memo.getCreatedAt() != null
+                        && !memo.getCreatedAt().toLocalDate().isBefore(date.start())
+                        && !memo.getCreatedAt().toLocalDate().isAfter(date.end())))
                 .filter(memo -> !message.toLowerCase(Locale.ROOT).contains("todo") || "todo".equals(memo.getMemoSort()))
                 .filter(memo -> !message.contains("아직") || valueOrEmpty(memo.getMemoCnnt()).contains("data-checked=\"false\""))
                 .limit(10)
                 .toList();
-        if (memos.isEmpty()) return "조건에 맞는 메모를 찾지 못했습니다.";
+        if (memos.isEmpty()) {
+            return date == null ? "조건에 맞는 메모를 찾지 못했습니다."
+                    : "%s 작성된 메모가 없습니다.".formatted(date.expression());
+        }
 
         StringBuilder result = new StringBuilder("관련 메모를 찾았습니다.\n\n");
         for (Memo memo : memos) {
@@ -165,53 +185,16 @@ public class AiAssistantService {
         );
     }
 
-    private DateRange calendarRange(String message) {
-        LocalDate today = LocalDate.now();
-        if (message.contains("내일")) return new DateRange(today.plusDays(1), today.plusDays(1));
-        if (message.contains("이번 주") || message.contains("이번주")) {
-            LocalDate monday = today.with(DayOfWeek.MONDAY);
-            return new DateRange(monday, monday.plusDays(6));
-        }
-        LocalDate explicit = parseDate(message);
-        LocalDate target = explicit == null ? today : explicit;
-        return new DateRange(target, target);
-    }
-
     private DateTimeRange memoRange(String message) {
-        LocalDate today = LocalDate.now();
-        if (message.contains("지난주") || message.contains("지난 주")) {
-            LocalDate thisMonday = today.with(DayOfWeek.MONDAY);
-            return new DateTimeRange(thisMonday.minusWeeks(1).atStartOfDay(), thisMonday.atStartOfDay());
-        }
-        if (message.contains("이번주") || message.contains("이번 주")) {
-            LocalDate monday = today.with(DayOfWeek.MONDAY);
-            return new DateTimeRange(monday.atStartOfDay(), monday.plusWeeks(1).atStartOfDay());
-        }
-        return new DateTimeRange(today.atStartOfDay(), today.plusDays(1).atStartOfDay());
+        AiDateExpressionService.DateSelection selection = dateExpressionService.resolve(message);
+        LocalDate start = selection == null ? LocalDate.now() : selection.start();
+        LocalDate end = selection == null ? start : selection.end();
+        return new DateTimeRange(start.atStartOfDay(), end.plusDays(1).atStartOfDay());
     }
 
     private LocalDate parseDate(String message) {
-        LocalDate today = LocalDate.now();
-        if (message.contains("내일")) return today.plusDays(1);
-        if (message.contains("오늘")) return today;
-
-        Matcher isoMatcher = ISO_DATE.matcher(message);
-        if (isoMatcher.find()) {
-            return LocalDate.of(
-                    Integer.parseInt(isoMatcher.group(1)),
-                    Integer.parseInt(isoMatcher.group(2)),
-                    Integer.parseInt(isoMatcher.group(3))
-            );
-        }
-        Matcher monthDayMatcher = MONTH_DAY.matcher(message);
-        if (monthDayMatcher.find()) {
-            return LocalDate.of(
-                    today.getYear(),
-                    Integer.parseInt(monthDayMatcher.group(1)),
-                    Integer.parseInt(monthDayMatcher.group(2))
-            );
-        }
-        return null;
+        AiDateExpressionService.DateSelection selection = dateExpressionService.resolve(message);
+        return selection != null && selection.isSingleDay() ? selection.start() : null;
     }
 
     private LocalTime parseTime(String message) {
@@ -226,10 +209,7 @@ public class AiAssistantService {
     }
 
     private String extractEventTitle(String message) {
-        return message
-                .replaceAll("오늘|내일", "")
-                .replaceAll("20\\d{2}[-./]\\d{1,2}[-./]\\d{1,2}", "")
-                .replaceAll("\\d{1,2}월\\s*\\d{1,2}일", "")
+        return dateExpressionService.withoutDateExpression(message)
                 .replaceAll("(오전|오후)?\\s*\\d{1,2}\\s*시(?:\\s*\\d{1,2}\\s*분)?(?:에)?", "")
                 .replaceAll("일정(?:을)?|추가해줘|추가해 주세요|추가|등록해줘|등록해 주세요|등록|잡아줘|만들어줘", "")
                 .replaceAll("^[에은는을를과와\\s]+|[.?!\\s]+$", "")
@@ -238,9 +218,9 @@ public class AiAssistantService {
     }
 
     private String extractMemoKeyword(String message) {
-        return message
-                .replaceAll("오늘|지난주|지난 주|이번주|이번 주|작성한|적어놓은|관련해서|관련|TODO|todo", "")
-                .replaceAll("메모|중|아직|해야 할|내용|찾아줘|찾아 주세요|찾아|검색해줘|검색|있어|보여줘", "")
+        return dateExpressionService.withoutDateExpression(message)
+                .replaceAll("작성한|적어놓은|관련해서|관련|TODO|todo", "")
+                .replaceAll("메모|중|아직|해야 할|내용|알려줘|알려 주세요|찾아줘|찾아 주세요|찾아|검색해줘|검색|있어|보여줘|조회해줘", "")
                 .replaceAll("[?!.]", "")
                 .replaceAll("\\s+", " ")
                 .trim();
@@ -270,9 +250,6 @@ public class AiAssistantService {
             if (text.contains(keyword)) return true;
         }
         return false;
-    }
-
-    private record DateRange(LocalDate start, LocalDate end) {
     }
 
     private record DateTimeRange(LocalDateTime start, LocalDateTime end) {

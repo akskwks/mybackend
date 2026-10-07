@@ -29,30 +29,30 @@ public class AiIntentService {
         if (work && create) return Intent.WORK_CREATE;
         if (work && update) return Intent.WORK_UPDATE;
         if (work && delete) return Intent.WORK_DELETE;
-        if (project && containsAny(text, "기간", "언제부터", "언제까지")) {
-            return Intent.PROJECT_PERIOD_QUERY;
-        }
-        if (work && containsAny(text, "주요", "목록", "알려", "조회", "뭐", "어떤", "보여")) {
-            return Intent.PROJECT_WORK_QUERY;
-        }
-        if (project && containsAny(text, "목록", "등록된 프로젝트", "프로젝트들", "뭐가 있어")) {
-            return Intent.PROJECT_LIST_QUERY;
-        }
-        if (project && containsAny(text, "정보", "대해", "알려", "조회", "보여")) {
-            return Intent.PROJECT_DETAIL_QUERY;
-        }
-
         if (calendar && containsAny(text, "추가", "등록", "잡아", "만들어")) {
             return Intent.CALENDAR_CREATE;
         }
-        if (calendar && containsAny(text, "알려", "조회", "있어", "정리", "보여")) {
+        if (calendar) {
             return Intent.CALENDAR_QUERY;
         }
         if (memo && containsAny(text, "요약", "정리", "중요한 내용")) {
             return Intent.MEMO_SUMMARY;
         }
-        if (memo && containsAny(text, "찾아", "검색", "있어", "보여")) {
+        if (memo) {
             return Intent.MEMO_SEARCH;
+        }
+        if (project && containsAny(text, "기간", "언제부터", "언제까지")) {
+            return Intent.PROJECT_PERIOD_QUERY;
+        }
+        if (work) {
+            return Intent.PROJECT_WORK_QUERY;
+        }
+        if (project && (containsAny(text, "목록", "등록된 프로젝트", "프로젝트들", "뭐가 있어")
+                || isProjectListPhrase(text))) {
+            return Intent.PROJECT_LIST_QUERY;
+        }
+        if (project) {
+            return Intent.PROJECT_DETAIL_QUERY;
         }
         return Intent.GENERAL_CHAT;
     }
@@ -94,6 +94,13 @@ public class AiIntentService {
             if (text.contains(keyword)) return true;
         }
         return false;
+    }
+
+    private boolean isProjectListPhrase(String text) {
+        String scope = text.replaceAll("(지난|이번|다음)\\s*(주|달)", "")
+                .replaceAll("[?!.\\s]", "")
+                .trim();
+        return "프로젝트".equals(scope) || "현재프로젝트".equals(scope);
     }
 
     public enum Intent {
