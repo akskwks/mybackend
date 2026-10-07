@@ -38,8 +38,10 @@ public class ProjectWorkAiAssistant {
             Intent.WORK_DELETE
     );
     private static final Pattern DATE_PATTERN = Pattern.compile(
-            "(20\\d{2})[-./](\\d{1,2})[-./](\\d{1,2})|(?:(20\\d{2})년\\s*)?(\\d{1,2})월\\s*(\\d{1,2})일"
+            "(?<![0-9])(?:(20\\d{2})[-./]|(20\\d{2})년\\s*)?(\\d{1,2})(?:[-./]|월\\s*)(\\d{1,2})(?:일)?(?![0-9])"
     );
+    private static final Pattern NUMBERED_PROJECT = Pattern.compile("(?m)^(\\d+)\\. (.+)$");
+    private static final Pattern PROJECT_FIELD = Pattern.compile("상태|진행사항|진행\\s*상태|분류|근무\\s*환경|시작일|종료일|일정|기간");
     private static final Pattern PROJECT_NAME_CHANGE = Pattern.compile(
             "프로젝트(?:명| 이름)(?:을|를)?\\s*(.+?)(?:으로|로)\\s*(?:변경|수정|바꿔)"
     );
@@ -71,7 +73,7 @@ public class ProjectWorkAiAssistant {
                 case PROJECT_PERIOD_QUERY -> projectPeriod(message);
                 case PROJECT_WORK_QUERY -> projectWorks(message);
                 case PROJECT_CREATE -> createProject(withPendingContext(message, history, "프로젝트 등록에 필요한 정보를"));
-                case PROJECT_UPDATE -> updateProject(withPendingContext(message, history, "프로젝트 수정 대상을"));
+                case PROJECT_UPDATE -> updateProject(message, history);
                 case PROJECT_DELETE -> deleteProject(withPendingContext(message, history, "프로젝트 삭제 대상을"));
                 case WORK_CREATE -> createWork(withPendingContext(message, history, "업무 등록에 필요한 정보를"));
                 case WORK_UPDATE -> updateWork(withPendingContext(message, history, "업무 수정 대상을"));
@@ -165,42 +167,75 @@ public class ProjectWorkAiAssistant {
         String name = extractCreatedProjectName(message);
         String environment = parseEnvironment(message);
         String status = parseStatus(message);
-        List<LocalDate> dates = parseDates(message);
+        if (status == null) status = "planned";
+        List<DateInput> dates = findDates(message);
         List<String> missing = new ArrayList<>();
         if (name == null) missing.add("프로젝트명");
         if (environment == null) missing.add("근무 환경(내근/파견)");
-        if (status == null) missing.add("진행 상태(예정/진행중/종료/보류)");
         if (dates.size() < 2) missing.add("시작일과 종료일");
         if (!missing.isEmpty()) {
             return "프로젝트 등록에 필요한 정보를 더 알려주세요: **%s**."
                     .formatted(String.join(", ", missing));
         }
 
-        ProjectList saved = tool.createProject(new ProjectListRequest(
-                environment, name, status, dates.get(0), dates.get(1)
-        ));
+        Integer sharedYear = dates.get(0).year() != null ? dates.get(0).year() : dates.get(1).year();
+        if (sharedYear == null) sharedYear = LocalDate.now().getYear();
+        LocalDate startDate = dates.get(0).toDate(sharedYear);
+        LocalDate endDate = dates.get(1).toDate(sharedYear);
+        if (startDate.isAfter(endDate)) return "종료일은 시작일보다 빠를 수 없습니다. 기간을 확인해 주세요.";
+        ProjectList saved = tool.createProject(new ProjectListRequest(environment, name, status, startDate, endDate));
         return "프로젝트를 등록했습니다.\n\n- **프로젝트명:** %s\n- **근무 환경:** %s\n- **진행 상태:** %s\n- **기간:** %s ~ %s"
                 .formatted(saved.getProjectName(), environmentLabel(saved.getWorkEnvironment()),
                         statusLabel(saved.getProjectStatus()), saved.getStartDate(), saved.getEndDate());
     }
 
-    private String updateProject(String message) {
-        ProjectSelection selection = resolveProject(message);
+    private String updateProject(String message, List<AiMessage> history) {
+        PendingProjectChoice choice = resolvePendingProjectChoice(message, history);
+        if (choice != null && !choice.selection().resolved()) return choice.selection().message();
+        if (choice != null) message = choice.request();
+        else {
+            message = withPendingContext(message, history, "프로젝트 수정 대상을");
+            message = withPendingContext(message, history, "프로젝트 수정에 필요한 정보를");
+        }
+        ProjectSelection selection = choice == null ? resolveProject(message) : choice.selection();
         if (!selection.resolved()) return "프로젝트 수정 대상을 확인해 주세요. " + selection.message();
         ProjectList project = selection.project();
 
-        String environment = parseEnvironment(message);
-        String status = parseStatus(message);
-        List<LocalDate> dates = parseDates(message);
+        boolean environmentRequested = message.contains("분류") || message.contains("근무 환경");
+        boolean statusRequested = message.contains("상태") || message.contains("진행사항");
+        String environment = environmentRequested ? parseEnvironment(message) : null;
+        String status = statusRequested ? parseStatus(message) : null;
+        if (environmentRequested && environment == null) return "프로젝트 수정에 필요한 정보를 더 알려주세요: 변경할 분류(내근/파견).";
+        if (statusRequested && status == null) return "프로젝트 수정에 필요한 정보를 더 알려주세요: 변경할 상태(예정/진행중/완료/보류).";
         String changedName = findGroup(PROJECT_NAME_CHANGE, message);
         LocalDate startDate = project.getStartDate();
         LocalDate endDate = project.getEndDate();
-        if (message.contains("시작") && !dates.isEmpty()) startDate = dates.get(0);
-        if (message.contains("종료") && !dates.isEmpty()) endDate = dates.get(dates.size() - 1);
-        if (!message.contains("시작") && !message.contains("종료") && dates.size() >= 2) {
-            startDate = dates.get(0);
-            endDate = dates.get(1);
+        boolean startRequested = message.contains("시작일");
+        boolean endRequested = message.contains("종료일");
+        boolean periodRequested = !startRequested && !endRequested
+                && (message.contains("일정") || message.contains("기간"));
+        if (startRequested || endRequested || periodRequested) {
+            List<DateInput> dates = findDates(message);
+            int required = periodRequested || startRequested && endRequested ? 2 : 1;
+            if (dates.size() < required) return "프로젝트 수정에 필요한 정보를 더 알려주세요: 변경할 %s."
+                    .formatted(required == 2 ? "시작일과 종료일" : startRequested ? "시작일" : "종료일");
+            if (periodRequested && dates.get(0).year() == null && dates.get(1).year() != null
+                    && project.getStartDate().getYear() != dates.get(1).year()) {
+                return "시작일의 연도가 모호합니다. 시작일과 종료일의 연도를 포함해 다시 요청해 주세요.";
+            }
+            if (startRequested || periodRequested) {
+                Integer year = periodRequested && dates.get(0).year() == null && dates.get(1).year() != null
+                        ? dates.get(1).year() : project.getStartDate().getYear();
+                startDate = dates.get(0).toDate(year);
+            }
+            if (endRequested || periodRequested) {
+                DateInput endInput = dates.get(required - 1);
+                Integer year = periodRequested && endInput.year() == null && dates.get(0).year() != null
+                        ? dates.get(0).year() : project.getEndDate().getYear();
+                endDate = endInput.toDate(year);
+            }
         }
+        if (startDate.isAfter(endDate)) return "종료일은 시작일보다 빠를 수 없습니다. 기간을 확인해 주세요.";
         boolean changed = environment != null || status != null || changedName != null
                 || !startDate.equals(project.getStartDate()) || !endDate.equals(project.getEndDate());
         if (!changed) return "수정할 항목과 변경할 값을 알려주세요.";
@@ -300,24 +335,57 @@ public class ProjectWorkAiAssistant {
         List<ProjectList> matches = projects.stream()
                 .filter(project -> normalizedMessage.contains(normalize(project.getProjectName())))
                 .toList();
-        if (matches.isEmpty()) {
-            String keyword = extractProjectKeyword(message);
-            if (keyword != null) {
-                String normalizedKeyword = normalize(keyword);
-                matches = projects.stream()
-                        .filter(project -> normalize(project.getProjectName()).contains(normalizedKeyword))
-                        .toList();
-            }
+        if (!matches.isEmpty()) {
+            int longest = matches.stream().map(ProjectList::getProjectName).mapToInt(String::length).max().orElse(0);
+            List<ProjectList> exact = matches.stream().filter(project -> project.getProjectName().length() == longest).toList();
+            if (exact.size() == 1) return new ProjectSelection(exact.get(0), null);
         }
-        if (matches.isEmpty()) return new ProjectSelection(null, "요청한 프로젝트를 찾지 못했습니다. 프로젝트명을 확인해 주세요.");
-
-        int longest = matches.stream().map(ProjectList::getProjectName).mapToInt(String::length).max().orElse(0);
-        List<ProjectList> mostSpecific = matches.stream()
-                .filter(project -> project.getProjectName().length() == longest)
+        String keyword = extractProjectKeyword(message);
+        if (keyword == null) return new ProjectSelection(null, "프로젝트명 키워드를 알려주세요.");
+        String normalizedKeyword = normalize(keyword);
+        matches = projects.stream()
+                .filter(project -> normalize(project.getProjectName()).contains(normalizedKeyword))
                 .toList();
-        if (mostSpecific.size() == 1) return new ProjectSelection(mostSpecific.get(0), null);
-        return new ProjectSelection(null, "동일하거나 유사한 프로젝트가 여러 개 있습니다: %s. 정확한 프로젝트명을 알려주세요."
-                .formatted(joinProjectNames(mostSpecific)));
+        if (matches.isEmpty()) return new ProjectSelection(null,
+                "'%s'가 포함된 프로젝트를 찾을 수 없습니다.".formatted(keyword));
+        if (matches.size() == 1) return new ProjectSelection(matches.get(0), null);
+        StringBuilder answer = new StringBuilder("'%s'가 포함된 프로젝트가 여러 개 있습니다.\n대상 프로젝트를 선택해주세요.\n"
+                .formatted(keyword));
+        for (int index = 0; index < matches.size(); index++) {
+            answer.append('\n').append(index + 1).append(". ").append(matches.get(index).getProjectName());
+        }
+        return new ProjectSelection(null, answer.toString());
+    }
+
+    private PendingProjectChoice resolvePendingProjectChoice(String message, List<AiMessage> history) {
+        if (!message.trim().matches("[1-9][0-9]*") || history == null || history.isEmpty()) return null;
+        for (int index = history.size() - 1; index >= 0; index--) {
+            AiMessage answer = history.get(index);
+            if (!"assistant".equals(answer.getRole())) continue;
+            if (!answer.getContent().contains("프로젝트 수정 대상을 확인해 주세요.")
+                    || !answer.getContent().contains("대상 프로젝트를 선택해주세요.")) return null;
+            int selected = Integer.parseInt(message.trim());
+            Matcher matcher = NUMBERED_PROJECT.matcher(answer.getContent());
+            String name = null;
+            while (matcher.find()) {
+                if (Integer.parseInt(matcher.group(1)) == selected) name = matcher.group(2).trim();
+            }
+            if (name == null) return new PendingProjectChoice(
+                    new ProjectSelection(null, answer.getContent() + "\n목록에 있는 번호를 선택해 주세요."), message);
+            String selectedName = name;
+            List<ProjectList> projects = tool.findProjects().stream()
+                    .filter(project -> project.getProjectName().equals(selectedName)).toList();
+            if (projects.size() != 1) return new PendingProjectChoice(
+                    new ProjectSelection(null, "선택한 프로젝트를 다시 확인해 주세요."), message);
+            for (int previous = index - 1; previous >= 0; previous--) {
+                AiMessage request = history.get(previous);
+                if ("user".equals(request.getRole()) && !request.getContent().trim().matches("[1-9][0-9]*")) {
+                    return new PendingProjectChoice(new ProjectSelection(projects.get(0), null), request.getContent());
+                }
+            }
+            return null;
+        }
+        return null;
     }
 
     private WorkSelection resolveWork(ProjectList project, String message) {
@@ -360,19 +428,29 @@ public class ProjectWorkAiAssistant {
     }
 
     private String extractCreatedProjectName(String message) {
-        int start = message.lastIndexOf("프로젝트로");
-        start = start >= 0 ? start + "프로젝트로".length() : 0;
-        int end = message.indexOf("프로젝트", start);
-        if (end < 0) return null;
-        String value = message.substring(start, end)
-                .replaceAll("(?m)^.*(?:추가 정보|정보):?", "")
-                .replaceAll("^(?:새로운|새)\\s+", "")
+        String value = DATE_PATTERN.matcher(message).replaceAll(" ")
+                .replaceAll("(?i)\\b(?:office|dispatch|planned|in_progress|completed|on_hold)\\b", " ")
+                .replaceAll("근무\\s*환경|프로젝트명|프로젝트\\s*이름|분류|진행\\s*상태|진행사항|상태", " ")
+                .replaceAll("내근|파견|진행\\s*중|완료|종료|보류|예정", " ")
+                .replaceAll("추가\\s*정보|정보|새로운|새", " ")
+                .replaceAll("프로젝트(?:로|를|을)?|추가|등록|생성|만들어|해주세요|해줘|기간|시작일|종료일", " ")
+                .replaceAll("부터|까지|이고|이며|이야|입니다|으로|라는|이라는|[,:~]", " ")
+                .replaceAll("(?m)(^|\\s)(?:은|는|로|을|를|이|가|및)(?=\\s|$)", " ")
+                .replaceAll("\\s+", " ")
                 .trim();
         return value.isBlank() ? null : value;
     }
 
     private String extractProjectKeyword(String message) {
-        int projectIndex = message.lastIndexOf("프로젝트");
+        Matcher field = PROJECT_FIELD.matcher(message);
+        if (field.find() && field.start() > 0) {
+            String keyword = message.substring(0, field.start())
+                    .replaceAll("프로젝트(?:의|에|에서)?\\s*$", "")
+                    .replaceAll("[의을를은는\\s]+$", "")
+                    .trim();
+            if (!keyword.isBlank()) return keyword;
+        }
+        int projectIndex = message.indexOf("프로젝트");
         String value;
         if (projectIndex > 0) {
             value = message.substring(0, projectIndex);
@@ -383,6 +461,7 @@ public class ProjectWorkAiAssistant {
         }
         value = value.replaceAll("^(?:현재|등록된|진행하고 있는|특정)\\s*", "")
                 .replaceAll(".*프로젝트로\\s*", "")
+                .replaceAll("[의을를은는\\s]+$", "")
                 .trim();
         return value.isBlank() ? null : value;
     }
@@ -406,17 +485,17 @@ public class ProjectWorkAiAssistant {
 
     private List<LocalDate> parseDates(String message) {
         List<LocalDate> dates = new ArrayList<>();
+        for (DateInput input : findDates(message)) dates.add(input.toDate(LocalDate.now().getYear()));
+        return dates;
+    }
+
+    private List<DateInput> findDates(String message) {
+        List<DateInput> dates = new ArrayList<>();
         Matcher matcher = DATE_PATTERN.matcher(message);
         while (matcher.find()) {
-            int year = Integer.parseInt(matcher.group(1) != null ? matcher.group(1)
-                    : matcher.group(4) != null ? matcher.group(4) : String.valueOf(LocalDate.now().getYear()));
-            int month = Integer.parseInt(matcher.group(2) != null ? matcher.group(2) : matcher.group(5));
-            int day = Integer.parseInt(matcher.group(3) != null ? matcher.group(3) : matcher.group(6));
-            try {
-                dates.add(LocalDate.of(year, month, day));
-            } catch (DateTimeException exception) {
-                throw new IllegalArgumentException("올바른 날짜를 입력해 주세요.");
-            }
+            String year = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+            dates.add(new DateInput(year == null ? null : Integer.parseInt(year),
+                    Integer.parseInt(matcher.group(3)), Integer.parseInt(matcher.group(4))));
         }
         return dates;
     }
@@ -436,7 +515,7 @@ public class ProjectWorkAiAssistant {
 
     private String parseStatus(String message) {
         if (message.contains("진행중") || message.contains("진행 중")) return "in_progress";
-        if (message.contains("종료")) return "completed";
+        if (message.contains("완료") || message.replace("종료일", "").contains("종료")) return "completed";
         if (message.contains("보류")) return "on_hold";
         if (message.contains("예정")) return "planned";
         return null;
@@ -451,10 +530,6 @@ public class ProjectWorkAiAssistant {
         return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("[^가-힣a-z0-9]", "");
     }
 
-    private String joinProjectNames(List<ProjectList> projects) {
-        return String.join(", ", projects.stream().map(ProjectList::getProjectName).toList());
-    }
-
     private String environmentLabel(String value) {
         return "dispatch".equals(value) ? "파견" : "내근";
     }
@@ -462,7 +537,7 @@ public class ProjectWorkAiAssistant {
     private String statusLabel(String value) {
         return switch (value) {
             case "in_progress" -> "진행중";
-            case "completed" -> "종료";
+            case "completed" -> "완료";
             case "on_hold" -> "보류";
             default -> "예정";
         };
@@ -471,6 +546,19 @@ public class ProjectWorkAiAssistant {
     private record ProjectSelection(ProjectList project, String message) {
         boolean resolved() {
             return project != null;
+        }
+    }
+
+    private record PendingProjectChoice(ProjectSelection selection, String request) {
+    }
+
+    private record DateInput(Integer year, int month, int day) {
+        LocalDate toDate(int defaultYear) {
+            try {
+                return LocalDate.of(year == null ? defaultYear : year, month, day);
+            } catch (DateTimeException exception) {
+                throw new IllegalArgumentException("올바른 날짜를 입력해 주세요.");
+            }
         }
     }
 

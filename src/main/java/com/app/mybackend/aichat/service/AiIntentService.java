@@ -15,7 +15,7 @@ public class AiIntentService {
         boolean memo = containsAny(text, "메모", "todo", "할 일");
         boolean project = text.contains("프로젝트");
         boolean work = text.contains("업무");
-        boolean create = containsAny(text, "추가해", "추가 해", "등록해", "등록 해", "생성해", "생성 해", "만들어");
+        boolean create = text.matches("(?s).*(?:추가|등록(?!된|되|돼)|생성|만들어).*");
         boolean update = containsAny(text, "수정", "변경", "바꿔", "고쳐");
         boolean delete = containsAny(text, "삭제", "지워", "제거");
         boolean workIsTarget = work && (!project || text.lastIndexOf("업무") > text.lastIndexOf("프로젝트"));
@@ -24,11 +24,12 @@ public class AiIntentService {
         if (workIsTarget && update) return Intent.WORK_UPDATE;
         if (workIsTarget && delete) return Intent.WORK_DELETE;
         if (project && create) return Intent.PROJECT_CREATE;
-        if (project && update) return Intent.PROJECT_UPDATE;
+        if (project && (update || hasProjectChange(text))) return Intent.PROJECT_UPDATE;
         if (project && delete) return Intent.PROJECT_DELETE;
         if (work && create) return Intent.WORK_CREATE;
         if (work && update) return Intent.WORK_UPDATE;
         if (work && delete) return Intent.WORK_DELETE;
+        if (!project && !work && hasProjectChange(text)) return Intent.PROJECT_UPDATE;
         if (calendar && containsAny(text, "추가", "등록", "잡아", "만들어")) {
             return Intent.CALENDAR_CREATE;
         }
@@ -75,6 +76,9 @@ public class AiIntentService {
             if (previous.getContent().contains("프로젝트 수정 대상을")) {
                 return Intent.PROJECT_UPDATE;
             }
+            if (previous.getContent().contains("프로젝트 수정에 필요한 정보를")) {
+                return Intent.PROJECT_UPDATE;
+            }
             if (previous.getContent().contains("프로젝트 삭제 대상을")) {
                 return Intent.PROJECT_DELETE;
             }
@@ -94,6 +98,13 @@ public class AiIntentService {
             if (text.contains(keyword)) return true;
         }
         return false;
+    }
+
+    private boolean hasProjectChange(String text) {
+        if (text.matches("(?s).*\\S+\\s+(?:상태|진행사항|분류|근무\\s*환경|시작일|종료일)(?:을|를|은|는)?\\s+\\S+.*")) {
+            return true;
+        }
+        return text.matches("(?s).*\\S+\\s+일정(?:을|은|는)?\\s+.*\\d{1,2}[-/월]\\s*\\d{1,2}.*");
     }
 
     private boolean isProjectListPhrase(String text) {

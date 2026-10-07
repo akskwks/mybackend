@@ -69,4 +69,15 @@ class AiIntentServiceTests {
         assertEquals(Intent.PROJECT_WORK_QUERY, service.detect("MyApp 주요 업무"));
         assertEquals(Intent.GENERAL_CHAT, service.detect("Spring Boot JPA가 뭐야?"));
     }
+
+    @Test
+    void recognizesShortProjectChangesAndKeywordCreate() {
+        assertEquals(Intent.PROJECT_CREATE,
+                service.detect("프로젝트 추가, 내근, 테스트, 2026-10-10, 2026-12-31"));
+        assertEquals(Intent.PROJECT_UPDATE, service.detect("코리안리 상태 진행중"));
+        assertEquals(Intent.PROJECT_UPDATE, service.detect("코리안리 분류 파견"));
+        assertEquals(Intent.PROJECT_UPDATE, service.detect("코리안리 시작일 11/1"));
+        assertEquals(Intent.PROJECT_UPDATE, service.detect("코리안리 일정 11/1~12/31"));
+        assertEquals(Intent.PROJECT_LIST_QUERY, service.detect("등록된 프로젝트 목록"));
+    }
 }
