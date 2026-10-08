@@ -16,11 +16,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 @Service
 public class AiChatJobService {
 
     private static final Duration COMPLETED_JOB_TTL = Duration.ofHours(2);
+    private static final String INTERRUPTED_MESSAGE = "AI 대화 생성 중 요청이 중단되었습니다. 잠시 후 다시 시도해주세요.";
 
     private final AiChatService chatService;
     private final ExecutorService requestExecutor;
@@ -57,10 +59,10 @@ public class AiChatJobService {
         JobState job = new JobState(requestId, prepared.conversationId());
         jobs.put(requestId, job);
         try {
-            requestExecutor.submit(() -> process(job, prepared));
+            job.setFuture(requestExecutor.submit(() -> process(job, prepared)));
         } catch (RuntimeException exception) {
             try {
-                AiMessage savedError = chatService.appendAssistant(
+                AiMessage savedError = chatService.appendException(
                         prepared.conversationId(),
                         "AI 요청을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요."
                 );
@@ -75,6 +77,28 @@ public class AiChatJobService {
     }
 
     public AiChatJobResponse find(String requestId) {
+        return requireJob(requestId).response();
+    }
+
+    public AiChatJobResponse cancel(String requestId) {
+        JobState job = requireJob(requestId);
+        synchronized (job) {
+            if (!job.isProcessing()) return job.response();
+            job.cancel();
+            try {
+                AiMessage savedError = chatService.appendException(job.conversationId(), INTERRUPTED_MESSAGE);
+                job.complete(savedError, true);
+            } catch (RuntimeException exception) {
+                job.failWithoutMessage();
+            } finally {
+                activeConversations.remove(job.conversationId(), job.requestId());
+                job.cancelFuture();
+            }
+            return job.response();
+        }
+    }
+
+    private JobState requireJob(String requestId) {
         UUID id;
         try {
             id = UUID.fromString(requestId);
@@ -85,7 +109,7 @@ public class AiChatJobService {
         if (job == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "AI 요청 작업을 찾을 수 없습니다.");
         }
-        return job.response();
+        return job;
     }
 
     public boolean isProcessing(Long conversationId) {
@@ -94,15 +118,22 @@ public class AiChatJobService {
 
     private void process(JobState job, AiChatService.PreparedChat prepared) {
         try {
-            AiMessage message = chatService.complete(prepared);
-            job.complete(message, false);
+            String answer = chatService.generate(prepared);
+            synchronized (job) {
+                if (job.isCancelled()) return;
+                AiMessage message = chatService.appendAssistant(prepared.conversationId(), answer);
+                job.complete(message, false);
+            }
         } catch (Throwable exception) {
-            String errorMessage = userMessage(exception);
-            try {
-                AiMessage savedError = chatService.appendAssistant(prepared.conversationId(), errorMessage);
-                job.complete(savedError, true);
-            } catch (Throwable saveException) {
-                job.failWithoutMessage();
+            synchronized (job) {
+                if (job.isCancelled()) return;
+                String errorMessage = userMessage(exception);
+                try {
+                    AiMessage savedError = chatService.appendException(prepared.conversationId(), errorMessage);
+                    job.complete(savedError, true);
+                } catch (Throwable saveException) {
+                    job.failWithoutMessage();
+                }
             }
         } finally {
             activeConversations.remove(prepared.conversationId(), job.requestId());
@@ -133,6 +164,8 @@ public class AiChatJobService {
         private volatile boolean failed;
         private volatile AiMessageResponse message;
         private volatile Instant completedAt;
+        private volatile boolean cancelled;
+        private volatile Future<?> future;
 
         private JobState(UUID requestId, Long conversationId) {
             this.requestId = requestId;
@@ -141,6 +174,30 @@ public class AiChatJobService {
 
         private UUID requestId() {
             return requestId;
+        }
+
+        private Long conversationId() {
+            return conversationId;
+        }
+
+        private void setFuture(Future<?> future) {
+            this.future = future;
+        }
+
+        private void cancelFuture() {
+            if (future != null) future.cancel(true);
+        }
+
+        private void cancel() {
+            cancelled = true;
+        }
+
+        private boolean isCancelled() {
+            return cancelled;
+        }
+
+        private boolean isProcessing() {
+            return "processing".equals(status);
         }
 
         private void complete(AiMessage savedMessage, boolean failed) {

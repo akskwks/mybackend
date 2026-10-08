@@ -57,6 +57,7 @@ public class OllamaChatGateway {
                     HttpStatus.GATEWAY_TIMEOUT
             );
         } catch (InterruptedException exception) {
+            request.cancel(true);
             Thread.currentThread().interrupt();
             throw new AiChatException(
                     "AI_REQUEST_INTERRUPTED",

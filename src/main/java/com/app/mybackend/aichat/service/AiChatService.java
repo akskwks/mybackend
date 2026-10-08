@@ -32,13 +32,16 @@ public class AiChatService {
         return new PreparedChat(conversation.getConversationId(), request.message(), List.copyOf(history));
     }
 
-    public AiMessage complete(PreparedChat chat) {
-        String answer = assistantService.respond(chat.message(), chat.history());
-        return appendAssistant(chat.conversationId(), answer);
+    public String generate(PreparedChat chat) {
+        return assistantService.respond(chat.message(), chat.history());
     }
 
     public AiMessage appendAssistant(Long conversationId, String content) {
         return conversationService.append(conversationId, "assistant", content);
+    }
+
+    public AiMessage appendException(Long conversationId, String content) {
+        return conversationService.append(conversationId, "exception", content);
     }
 
     public record PreparedChat(

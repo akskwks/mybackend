@@ -189,6 +189,33 @@ class AiProjectWorkAssistantTests {
     }
 
     @Test
+    void changesWorkEnvironmentEvenWhenProjectNameContainsOldValue() {
+        ProjectList project = project(1L, "파견 코리안리 프로젝트");
+        project.setWorkEnvironment("dispatch");
+        when(tool.findProjects()).thenReturn(List.of(project));
+        when(tool.updateProject(eq(1L), any())).thenAnswer(call -> fromRequest(1L, call.getArgument(1)));
+
+        String answer = assistant.respond(PROJECT_UPDATE,
+                "파견 코리안리 프로젝트 근무환경을 내근으로 바꿔줘", List.of());
+        ArgumentCaptor<ProjectListRequest> changed = ArgumentCaptor.forClass(ProjectListRequest.class);
+        verify(tool).updateProject(eq(1L), changed.capture());
+        assertEquals("office", changed.getValue().workEnvironment());
+        assertEquals(project.getProjectStatus(), changed.getValue().projectStatus());
+        assertTrue(answer.contains("근무 환경:** 내근"));
+    }
+
+    @Test
+    void sameWorkEnvironmentDoesNotReportUpdate() {
+        ProjectList project = project(1L, "코리안리 프로젝트");
+        when(tool.findProjects()).thenReturn(List.of(project));
+
+        String answer = assistant.respond(PROJECT_UPDATE,
+                "코리안리 근무환경 내근", List.of());
+        assertTrue(answer.contains("이미 근무 환경이 내근"));
+        verify(tool, never()).updateProject(any(), any());
+    }
+
+    @Test
     void doesNotGuessMissingProjectOrAmbiguousYear() {
         ProjectList project = project(1L, "코리안리 프로젝트");
         when(tool.findProjects()).thenReturn(List.of(project));

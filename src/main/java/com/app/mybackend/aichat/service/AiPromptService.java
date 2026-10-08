@@ -41,6 +41,7 @@ public class AiPromptService {
     private String formatHistory(List<AiMessage> history) {
         if (history.isEmpty()) return "이전 대화 없음";
         return history.stream()
+                .filter(message -> "user".equals(message.getRole()) || "assistant".equals(message.getRole()))
                 .map(message -> ("user".equals(message.getRole()) ? "사용자" : "AI") + ": " + message.getContent())
                 .reduce((left, right) -> left + "\n" + right)
                 .orElse("이전 대화 없음");

@@ -42,6 +42,8 @@ public class ProjectWorkAiAssistant {
     );
     private static final Pattern NUMBERED_PROJECT = Pattern.compile("(?m)^(\\d+)\\. (.+)$");
     private static final Pattern PROJECT_FIELD = Pattern.compile("상태|진행사항|진행\\s*상태|분류|근무\\s*환경|시작일|종료일|일정|기간");
+    private static final Pattern ENVIRONMENT_FIELD = Pattern.compile("근무\\s*환경|분류");
+    private static final Pattern ENVIRONMENT_VALUE = Pattern.compile("내근|파견");
     private static final Pattern PROJECT_NAME_CHANGE = Pattern.compile(
             "프로젝트(?:명| 이름)(?:을|를)?\\s*(.+?)(?:으로|로)\\s*(?:변경|수정|바꿔)"
     );
@@ -201,9 +203,9 @@ public class ProjectWorkAiAssistant {
         if (!selection.resolved()) return "프로젝트 수정 대상을 확인해 주세요. " + selection.message();
         ProjectList project = selection.project();
 
-        boolean environmentRequested = message.contains("분류") || message.contains("근무 환경");
+        boolean environmentRequested = message.contains("분류") || message.matches("(?s).*근무\\s*환경.*");
         boolean statusRequested = message.contains("상태") || message.contains("진행사항");
-        String environment = environmentRequested ? parseEnvironment(message) : null;
+        String environment = environmentRequested ? parseUpdatedEnvironment(message) : null;
         String status = statusRequested ? parseStatus(message) : null;
         if (environmentRequested && environment == null) return "프로젝트 수정에 필요한 정보를 더 알려주세요: 변경할 분류(내근/파견).";
         if (statusRequested && status == null) return "프로젝트 수정에 필요한 정보를 더 알려주세요: 변경할 상태(예정/진행중/완료/보류).";
@@ -236,9 +238,12 @@ public class ProjectWorkAiAssistant {
             }
         }
         if (startDate.isAfter(endDate)) return "종료일은 시작일보다 빠를 수 없습니다. 기간을 확인해 주세요.";
-        boolean changed = environment != null || status != null || changedName != null
+        boolean changed = (environment != null && !environment.equals(project.getWorkEnvironment()))
+                || (status != null && !status.equals(project.getProjectStatus())) || changedName != null
                 || !startDate.equals(project.getStartDate()) || !endDate.equals(project.getEndDate());
-        if (!changed) return "수정할 항목과 변경할 값을 알려주세요.";
+        if (!changed) return environmentRequested && environment != null
+                ? "이미 근무 환경이 %s입니다.".formatted(environmentLabel(project.getWorkEnvironment()))
+                : "변경할 항목과 현재와 다른 값을 알려주세요.";
 
         ProjectList saved = tool.updateProject(project.getProjectId(), new ProjectListRequest(
                 environment == null ? project.getWorkEnvironment() : environment,
@@ -511,6 +516,15 @@ public class ProjectWorkAiAssistant {
         if (message.contains("파견")) return "dispatch";
         if (message.contains("내근")) return "office";
         return null;
+    }
+
+    private String parseUpdatedEnvironment(String message) {
+        Matcher field = ENVIRONMENT_FIELD.matcher(message);
+        if (!field.find()) return null;
+        Matcher values = ENVIRONMENT_VALUE.matcher(message.substring(field.end()));
+        String target = null;
+        while (values.find()) target = values.group();
+        return target == null ? null : "내근".equals(target) ? "office" : "dispatch";
     }
 
     private String parseStatus(String message) {

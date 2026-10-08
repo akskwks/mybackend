@@ -82,4 +82,9 @@ public class AiChatController {
     public AiChatJobResponse chatStatus(@PathVariable String requestId) {
         return chatJobService.find(requestId);
     }
+
+    @DeleteMapping("/chat/{requestId}")
+    public AiChatJobResponse cancelChat(@PathVariable String requestId) {
+        return chatJobService.cancel(requestId);
+    }
 }

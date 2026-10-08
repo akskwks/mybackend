@@ -66,6 +66,7 @@ public class AiIntentService {
 
         for (int index = history.size() - 1; index >= 0; index--) {
             AiMessage previous = history.get(index);
+            if ("exception".equals(previous.getRole())) return detected;
             if (!"assistant".equals(previous.getRole())) continue;
             if (previous.getContent().contains("프로젝트 등록에 필요한 정보를")) {
                 return Intent.PROJECT_CREATE;
