@@ -354,7 +354,7 @@ public class ProjectWorkAiAssistant {
         if (matches.isEmpty()) return new ProjectSelection(null,
                 "'%s'가 포함된 프로젝트를 찾을 수 없습니다.".formatted(keyword));
         if (matches.size() == 1) return new ProjectSelection(matches.get(0), null);
-        StringBuilder answer = new StringBuilder("'%s'가 포함된 프로젝트가 여러 개 있습니다.\n대상 프로젝트를 선택해주세요.\n"
+        StringBuilder answer = new StringBuilder("'%s'가 포함된 프로젝트가 여러 개 있습니다.\n대상 프로젝트를 번호로 선택해주세요.\n"
                 .formatted(keyword));
         for (int index = 0; index < matches.size(); index++) {
             answer.append('\n').append(index + 1).append(". ").append(matches.get(index).getProjectName());
@@ -368,7 +368,7 @@ public class ProjectWorkAiAssistant {
             AiMessage answer = history.get(index);
             if (!"assistant".equals(answer.getRole())) continue;
             if (!answer.getContent().contains("프로젝트 수정 대상을 확인해 주세요.")
-                    || !answer.getContent().contains("대상 프로젝트를 선택해주세요.")) return null;
+                    || !answer.getContent().contains("대상 프로젝트를 번호로 선택해주세요.")) return null;
             int selected = Integer.parseInt(message.trim());
             Matcher matcher = NUMBERED_PROJECT.matcher(answer.getContent());
             String name = null;

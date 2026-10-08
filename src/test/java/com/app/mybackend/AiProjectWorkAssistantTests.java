@@ -134,7 +134,7 @@ class AiProjectWorkAssistantTests {
         AiMessage prompt = message("assistant", choices);
 
         String retry = assistant.respond(PROJECT_UPDATE, "9", List.of(request, prompt));
-        assertTrue(retry.contains("대상 프로젝트를 선택해주세요"));
+        assertTrue(retry.contains("대상 프로젝트를 번호로 선택해주세요"));
         String result = assistant.respond(PROJECT_UPDATE, "2", List.of(request, prompt, message("user", "9"), message("assistant", retry)));
         verify(tool).updateProject(eq(2L), any());
         assertTrue(result.contains(second.getProjectName()));
