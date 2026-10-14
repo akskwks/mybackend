@@ -1,3 +1,18 @@
+CREATE TABLE IF NOT EXISTS app_user (
+    user_num BIGINT NOT NULL AUTO_INCREMENT,
+    user_id VARCHAR(100) NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    use_yn CHAR(1) NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (user_num),
+    CONSTRAINT uk_app_user_user_id UNIQUE (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+drop table app_user;
+
 CREATE TABLE IF NOT EXISTS app_calendar (
     event_id BIGINT NOT NULL AUTO_INCREMENT,
     event_title VARCHAR(255) NULL,
