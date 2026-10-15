@@ -1,6 +1,7 @@
 package com.app.mybackend.work.service;
 
 import com.app.mybackend.work.dto.ProjectListRequest;
+import com.app.mybackend.config.CurrentUser;
 import com.app.mybackend.work.entity.ProjectList;
 import com.app.mybackend.work.repository.ProjectListRepository;
 import com.app.mybackend.work.repository.WorkListRepository;
@@ -24,13 +25,14 @@ public class ProjectListService {
 
     private final ProjectListRepository projectListRepository;
     private final WorkListRepository workListRepository;
+    private final CurrentUser currentUser;
 
     public List<ProjectList> findAll() {
-        return projectListRepository.findAllByOrderByUpdatedAtDesc();
+        return projectListRepository.findByUserNumOrderByUpdatedAtDesc(currentUser.number());
     }
 
     public ProjectList findById(Long id) {
-        return projectListRepository.findById(id)
+        return projectListRepository.findByProjectIdAndUserNum(id, currentUser.number())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "프로젝트를 찾을 수 없습니다."
@@ -39,6 +41,7 @@ public class ProjectListService {
 
     public ProjectList create(ProjectListRequest request) {
         ProjectList projectList = new ProjectList();
+        projectList.setUserNum(currentUser.number());
         apply(projectList, request);
         return projectListRepository.save(projectList);
     }
@@ -50,13 +53,14 @@ public class ProjectListService {
     }
 
     public void delete(Long projectId) {
+        ProjectList projectList = findById(projectId);
         if (workListRepository.existsByProjectId(projectId)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "연결된 업무가 있는 프로젝트는 삭제할 수 없습니다."
             );
         }
-        projectListRepository.deleteById(projectId);
+        projectListRepository.delete(projectList);
     }
 
 

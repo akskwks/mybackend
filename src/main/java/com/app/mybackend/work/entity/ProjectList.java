@@ -19,6 +19,9 @@ public class ProjectList {
     @Column(name = "project_id")
     private Long projectId;
 
+    @Column(name = "user_num", nullable = false)
+    private Long userNum;
+
     @Column(name = "work_environment", length = 20, nullable = false)
     private String workEnvironment;
 

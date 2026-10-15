@@ -23,9 +23,11 @@ public class WorkListService {
 
     private final WorkListRepository repository;
     private final WorkFileService workFileService;
+    private final ProjectListService projectListService;
 
     @Transactional(readOnly = true)
     public List<WorkList> findAll(Long projectId, LocalDate date) {
+        projectListService.findById(projectId);
         if (date != null) {
             return repository.findByProjectIdAndWorkDateOrderByUpdatedAt(projectId, date);
         }
@@ -34,8 +36,10 @@ public class WorkListService {
 
     @Transactional(readOnly = true)
     public WorkList findById(Long workId) {
-        return repository.findById(workId)
+        WorkList work = repository.findById(workId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "업무를 찾을 수 없습니다."));
+        projectListService.findById(work.getProjectId());
+        return work;
     }
 
 //    public List<WorkList> findBetween(LocalDate start, LocalDate end) {
@@ -44,6 +48,8 @@ public class WorkListService {
 
     @Transactional
     public WorkList create(WorkListRequest request) {
+        validate(request);
+        projectListService.findById(request.projectId());
         WorkList workList = new WorkList();
         apply(workList, request);
         return repository.save(workList);
@@ -60,6 +66,10 @@ public class WorkListService {
     @Transactional
     public WorkList update(Long workId, WorkListRequest request) {
         WorkList workList = findById(workId);
+        validate(request);
+        if (!workList.getProjectId().equals(request.projectId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "업무의 프로젝트는 변경할 수 없습니다.");
+        }
         apply(workList, request);
         return repository.save(workList);
     }

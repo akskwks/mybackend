@@ -27,6 +27,7 @@ public class ProjectWorkAiTool {
     }
 
     public long countWorks(Long projectId) {
+        projectService.findById(projectId);
         return workRepository.countByProjectId(projectId);
     }
 

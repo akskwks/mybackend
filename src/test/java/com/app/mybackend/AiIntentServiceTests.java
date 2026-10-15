@@ -29,6 +29,20 @@ class AiIntentServiceTests {
     }
 
     @Test
+    void projectKeywordInCalendarTitleDoesNotCreateProject() {
+        assertEquals(Intent.CALENDAR_CREATE,
+                service.detect("내일 오후 3시에 프로젝트 회의 일정 추가해줘"));
+        assertEquals(Intent.CALENDAR_CREATE,
+                service.detect("프로젝트 회의 일정을 오늘 14시에 등록해줘"));
+        assertEquals(Intent.CALENDAR_QUERY,
+                service.detect("프로젝트 관련 등록된 일정 알려줘"));
+        assertEquals(Intent.PROJECT_CREATE,
+                service.detect("내근 MyApp 프로젝트 추가해줘"));
+        assertEquals(Intent.WORK_CREATE,
+                service.detect("MyApp 프로젝트에 개발 업무 추가해줘"));
+    }
+
+    @Test
     void detectsProjectAndWorkMutations() {
         assertEquals(Intent.PROJECT_UPDATE, service.detect("MyApp 프로젝트 종료일을 변경해줘"));
         assertEquals(Intent.PROJECT_DELETE, service.detect("MyApp 테스트 프로젝트 삭제해줘"));

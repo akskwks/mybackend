@@ -24,6 +24,9 @@ public class AiConversation {
     @Column(name = "conversation_id")
     private Long conversationId;
 
+    @Column(name = "user_num", nullable = false)
+    private Long userNum;
+
     @Column(name = "title", length = 120, nullable = false)
     private String title;
 

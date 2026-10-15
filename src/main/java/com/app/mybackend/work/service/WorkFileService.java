@@ -3,6 +3,7 @@ package com.app.mybackend.work.service;
 import com.app.mybackend.work.dto.WorkFileResponse;
 import com.app.mybackend.work.entity.WorkFile;
 import com.app.mybackend.work.repository.WorkFileRepository;
+import com.app.mybackend.work.repository.WorkListRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -25,9 +26,12 @@ public class WorkFileService {
 
     private final WorkFileRepository workFileRepository;
     private final WorkFileStorageService workFileStorageService;
+    private final WorkListRepository workListRepository;
+    private final ProjectListService projectListService;
 
     @Transactional(readOnly = true)
     public List<WorkFileResponse> findAll(Long workId) {
+        requireWorkOwner(workId);
         return workFileRepository.findByWorkIdOrderByCreatedAtAsc(workId)
                 .stream()
                 .map(WorkFileResponse::from)
@@ -36,13 +40,16 @@ public class WorkFileService {
 
     @Transactional(readOnly = true)
     public WorkFile findById(Long workFileId) {
-        return workFileRepository.findById(workFileId)
+        WorkFile file = workFileRepository.findById(workFileId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "첨부파일을 찾을 수 없습니다."
                 ));
+        requireWorkOwner(file.getWorkId());
+        return file;
     }
 
     public List<WorkFile> saveAll(Long workId, List<MultipartFile> files) {
+        requireWorkOwner(workId);
         if (files == null || files.isEmpty()) return List.of();
         if (files.size() > MAX_FILES_PER_REQUEST) {
             throw new ResponseStatusException(
@@ -77,6 +84,7 @@ public class WorkFileService {
     }
 
     public void deleteSelected(Long workId, Collection<Long> workFileIds) {
+        requireWorkOwner(workId);
         if (workFileIds == null || workFileIds.isEmpty()) return;
 
         List<WorkFile> workFiles = workFileRepository.findByWorkIdAndWorkFileIdIn(workId, workFileIds);
@@ -90,6 +98,7 @@ public class WorkFileService {
     }
 
     public void deleteAllForWork(Long workId) {
+        requireWorkOwner(workId);
         List<WorkFile> files = workFileRepository.findByWorkIdOrderByCreatedAtAsc(workId);
         workFileRepository.deleteAll(files);
         deletePhysicalFilesAfterCommit(files);
@@ -103,7 +112,15 @@ public class WorkFileService {
     }
 
     public Resource loadResource(WorkFile file) {
+        requireWorkOwner(file.getWorkId());
         return workFileStorageService.load(file.getFilePath());
+    }
+
+    private void requireWorkOwner(Long workId) {
+        Long projectId = workListRepository.findById(workId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "업무를 찾을 수 없습니다."))
+                .getProjectId();
+        projectListService.findById(projectId);
     }
 
     private void deleteNewFilesOnRollback(List<String> paths) {

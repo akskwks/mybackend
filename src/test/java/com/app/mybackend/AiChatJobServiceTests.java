@@ -5,6 +5,7 @@ import com.app.mybackend.aichat.dto.response.AiChatJobResponse;
 import com.app.mybackend.aichat.entity.AiMessage;
 import com.app.mybackend.aichat.service.AiChatJobService;
 import com.app.mybackend.aichat.service.AiChatService;
+import com.app.mybackend.aichat.service.AiConversationService;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -32,7 +33,7 @@ class AiChatJobServiceTests {
         AiChatService chatService = mock(AiChatService.class);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
-            AiChatJobService jobs = new AiChatJobService(chatService, executor);
+            AiChatJobService jobs = new AiChatJobService(chatService, mock(AiConversationService.class), executor);
             when(chatService.prepare(any())).thenReturn(new AiChatService.PreparedChat(7L, "질문", List.of()));
             CountDownLatch started = new CountDownLatch(1);
             when(chatService.generate(any())).thenAnswer(call -> {
@@ -66,7 +67,7 @@ class AiChatJobServiceTests {
         AiChatService chatService = mock(AiChatService.class);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
-            AiChatJobService jobs = new AiChatJobService(chatService, executor);
+            AiChatJobService jobs = new AiChatJobService(chatService, mock(AiConversationService.class), executor);
             when(chatService.prepare(any())).thenReturn(new AiChatService.PreparedChat(7L, "질문", List.of()));
             when(chatService.generate(any())).thenThrow(new RuntimeException("failure"));
             when(chatService.appendException(eq(7L), any()))
@@ -92,7 +93,7 @@ class AiChatJobServiceTests {
         AiChatService chatService = mock(AiChatService.class);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
-            AiChatJobService jobs = new AiChatJobService(chatService, executor);
+            AiChatJobService jobs = new AiChatJobService(chatService, mock(AiConversationService.class), executor);
             when(chatService.prepare(any())).thenReturn(new AiChatService.PreparedChat(7L, "질문", List.of()));
             when(chatService.generate(any())).thenReturn("정상 답변");
             when(chatService.appendAssistant(7L, "정상 답변"))

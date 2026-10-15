@@ -2,6 +2,7 @@ package com.app.mybackend.aichat.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.concurrent.DelegatingSecurityContextExecutorService;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,11 +12,11 @@ public class AiChatConfig {
 
     @Bean(destroyMethod = "shutdown")
     public ExecutorService aiChatExecutor() {
-        return Executors.newFixedThreadPool(2);
+        return new DelegatingSecurityContextExecutorService(Executors.newFixedThreadPool(2));
     }
 
     @Bean(destroyMethod = "shutdown")
     public ExecutorService aiRequestExecutor() {
-        return Executors.newFixedThreadPool(4);
+        return new DelegatingSecurityContextExecutorService(Executors.newFixedThreadPool(4));
     }
 }

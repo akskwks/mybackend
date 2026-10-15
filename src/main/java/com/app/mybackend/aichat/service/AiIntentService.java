@@ -20,6 +20,9 @@ public class AiIntentService {
         boolean delete = containsAny(text, "삭제", "지워", "제거");
         boolean workIsTarget = work && (!project || text.lastIndexOf("업무") > text.lastIndexOf("프로젝트"));
 
+        if (calendar && (create || text.contains("잡아"))) {
+            return Intent.CALENDAR_CREATE;
+        }
         if (workIsTarget && create) return Intent.WORK_CREATE;
         if (workIsTarget && update) return Intent.WORK_UPDATE;
         if (workIsTarget && delete) return Intent.WORK_DELETE;
@@ -30,9 +33,6 @@ public class AiIntentService {
         if (work && update) return Intent.WORK_UPDATE;
         if (work && delete) return Intent.WORK_DELETE;
         if (!project && !work && hasProjectChange(text)) return Intent.PROJECT_UPDATE;
-        if (calendar && containsAny(text, "추가", "등록", "잡아", "만들어")) {
-            return Intent.CALENDAR_CREATE;
-        }
         if (calendar) {
             return Intent.CALENDAR_QUERY;
         }

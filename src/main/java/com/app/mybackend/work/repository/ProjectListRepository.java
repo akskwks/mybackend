@@ -4,7 +4,9 @@ import com.app.mybackend.work.entity.ProjectList;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProjectListRepository extends JpaRepository<ProjectList, Long> {
-    List<ProjectList> findAllByOrderByUpdatedAtDesc();
+    List<ProjectList> findByUserNumOrderByUpdatedAtDesc(Long userNum);
+    Optional<ProjectList> findByProjectIdAndUserNum(Long projectId, Long userNum);
 }

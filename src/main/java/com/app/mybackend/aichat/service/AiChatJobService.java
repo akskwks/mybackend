@@ -25,20 +25,26 @@ public class AiChatJobService {
     private static final String INTERRUPTED_MESSAGE = "AI 대화 생성 중 요청이 중단되었습니다. 잠시 후 다시 시도해주세요.";
 
     private final AiChatService chatService;
+    private final AiConversationService conversationService;
     private final ExecutorService requestExecutor;
     private final Map<UUID, JobState> jobs = new ConcurrentHashMap<>();
     private final Map<Long, UUID> activeConversations = new ConcurrentHashMap<>();
 
     public AiChatJobService(
             AiChatService chatService,
+            AiConversationService conversationService,
             @Qualifier("aiRequestExecutor") ExecutorService requestExecutor
     ) {
         this.chatService = chatService;
+        this.conversationService = conversationService;
         this.requestExecutor = requestExecutor;
     }
 
     public synchronized AiChatJobResponse start(AiChatRequest request) {
         cleanupCompletedJobs();
+        if (request.conversationId() != null) {
+            conversationService.findEntity(request.conversationId());
+        }
         if (request.conversationId() != null && activeConversations.containsKey(request.conversationId())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -77,11 +83,14 @@ public class AiChatJobService {
     }
 
     public AiChatJobResponse find(String requestId) {
-        return requireJob(requestId).response();
+        JobState job = requireJob(requestId);
+        conversationService.findEntity(job.conversationId());
+        return job.response();
     }
 
     public AiChatJobResponse cancel(String requestId) {
         JobState job = requireJob(requestId);
+        conversationService.findEntity(job.conversationId());
         synchronized (job) {
             if (!job.isProcessing()) return job.response();
             job.cancel();
@@ -113,6 +122,7 @@ public class AiChatJobService {
     }
 
     public boolean isProcessing(Long conversationId) {
+        conversationService.findEntity(conversationId);
         return activeConversations.containsKey(conversationId);
     }
 

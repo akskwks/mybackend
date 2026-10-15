@@ -6,6 +6,7 @@ import com.app.mybackend.aichat.entity.AiConversation;
 import com.app.mybackend.aichat.entity.AiMessage;
 import com.app.mybackend.aichat.repository.AiConversationRepository;
 import com.app.mybackend.aichat.repository.AiMessageRepository;
+import com.app.mybackend.config.CurrentUser;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -18,17 +19,20 @@ public class AiConversationService {
 
     private final AiConversationRepository conversationRepository;
     private final AiMessageRepository messageRepository;
+    private final CurrentUser currentUser;
 
     public AiConversationService(
             AiConversationRepository conversationRepository,
-            AiMessageRepository messageRepository
+            AiMessageRepository messageRepository,
+            CurrentUser currentUser
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
+        this.currentUser = currentUser;
     }
 
     public List<AiConversationResponse> findAll() {
-        return conversationRepository.findAllByOrderByUpdatedAtDesc().stream()
+        return conversationRepository.findByUserNumOrderByUpdatedAtDesc(currentUser.number()).stream()
                 .map(AiConversationResponse::from)
                 .toList();
     }
@@ -36,6 +40,7 @@ public class AiConversationService {
     @Transactional
     public AiConversation create(String title) {
         AiConversation conversation = new AiConversation();
+        conversation.setUserNum(currentUser.number());
         conversation.setTitle(normalizeTitle(title));
         return conversationRepository.save(conversation);
     }
@@ -48,7 +53,7 @@ public class AiConversationService {
     }
 
     public AiConversation findEntity(Long conversationId) {
-        return conversationRepository.findById(conversationId)
+        return conversationRepository.findByConversationIdAndUserNum(conversationId, currentUser.number())
                 .orElseThrow(() -> new IllegalArgumentException("대화를 찾을 수 없습니다."));
     }
 
@@ -60,6 +65,7 @@ public class AiConversationService {
     }
 
     public List<AiMessage> findRecentMessages(Long conversationId, int limit) {
+        findEntity(conversationId);
         List<AiMessage> messages = messageRepository
                 .findByConversationIdOrderByCreatedAtAscMessageIdAsc(conversationId);
         return messages.subList(Math.max(0, messages.size() - limit), messages.size());
@@ -81,6 +87,7 @@ public class AiConversationService {
 
     @Transactional
     public void applyFirstMessageTitle(AiConversation conversation, String message) {
+        findEntity(conversation.getConversationId());
         if (!DEFAULT_TITLE.equals(conversation.getTitle())) return;
         conversation.setTitle(toTitle(message));
         conversationRepository.save(conversation);

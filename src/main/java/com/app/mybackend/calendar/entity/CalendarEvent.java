@@ -19,6 +19,9 @@ public class CalendarEvent {
     @Column(name = "event_id")
     private Long eventId;
 
+    @Column(name = "user_num", nullable = false)
+    private Long userNum;
+
     @Column(name = "event_title")
     private String eventTitle;
 

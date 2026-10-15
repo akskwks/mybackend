@@ -17,6 +17,9 @@ public class Memo {
     @Column(name = "memo_id")
     private Long memoId;
 
+    @Column(name = "user_num", nullable = false)
+    private Long userNum;
+
     @Column(name = "memo_title", length = 40, nullable = false)
     private String memoTitle;
 
