@@ -1,5 +1,7 @@
 package com.app.mybackend.config;
 
+import com.app.mybackend.log.filter.LogFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -8,18 +10,21 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 
 @Configuration
 public class SecurityConfig {
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, LogFilter systemLogFilter) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/user/csrf").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/user/login", "/api/user/register").permitAll()
+                .requestMatchers("/api/logs", "/api/logs/**").hasRole("ADMIN")
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll())
+            .addFilterAfter(systemLogFilter, AuthorizationFilter.class)
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
             .csrf(csrf -> csrf.csrfTokenRepository(new org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository()))
@@ -35,6 +40,13 @@ public class SecurityConfig {
                     response.getWriter().write("{\"message\":\"요청 권한이 없거나 인증 정보가 만료되었습니다.\"}");
                 }));
         return http.build();
+    }
+
+    @Bean
+    FilterRegistrationBean<LogFilter> systemLogFilterRegistration(LogFilter filter) {
+        FilterRegistrationBean<LogFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
