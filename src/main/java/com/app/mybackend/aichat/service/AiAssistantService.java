@@ -7,11 +7,14 @@ import com.app.mybackend.calendar.service.CalendarEventService;
 import com.app.mybackend.memo.entity.Memo;
 import com.app.mybackend.memo.service.MemoService;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.util.HtmlUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -20,6 +23,10 @@ import java.util.regex.Pattern;
 @Service
 public class AiAssistantService {
     private static final Pattern TIME = Pattern.compile("(오전|오후)?\\s*(\\d{1,2})\\s*시(?:\\s*(\\d{1,2})\\s*분)?");
+    private static final Pattern DELETE_CHOICE = Pattern.compile("^\\s*([0-9]+)(?:번)?(?:\\s*(?:삭제(?:해줘|해 주세요)?|지워줘))?\\s*$");
+    private static final Pattern DELETE_ITEM = Pattern.compile("(?m)^([1-9][0-9]*)\\. \\[[^\\n]+?\\]\\(#/calendar\\?eventId=([0-9]+)\\)");
+    private static final Pattern DELETE_DATE = Pattern.compile("\\(([0-9]{4}-[0-9]{2}-[0-9]{2})\\) 일정입니다\\.");
+    private static final String DELETE_CHOICE_PROMPT = "삭제할 일정 번호를 선택해 주세요.";
 
     private final AiIntentService intentService;
     private final AiPromptService promptService;
@@ -48,6 +55,9 @@ public class AiAssistantService {
     }
 
     public String respond(String message, List<AiMessage> history) {
+        String selectedDelete = deleteSelectedCalendarEvent(message, history);
+        if (selectedDelete != null) return selectedDelete;
+
         AiIntentService.Intent intent = intentService.detect(message, history);
         if (projectWorkAssistant.supports(intent)) {
             return projectWorkAssistant.respond(intent, message, history);
@@ -55,6 +65,7 @@ public class AiAssistantService {
         return switch (intent) {
             case CALENDAR_QUERY -> answerCalendarQuery(message);
             case CALENDAR_CREATE -> createCalendarEvent(message);
+            case CALENDAR_DELETE -> listCalendarEventsForDeletion(message);
             case MEMO_SEARCH -> searchMemos(message);
             case MEMO_SUMMARY -> summarizeMemos(message, history);
             case GENERAL_CHAT -> askOllama(message, history, "");
@@ -97,6 +108,92 @@ public class AiAssistantService {
             item.append(' ');
         }
         return item.append(event.getEventTitle()).toString();
+    }
+
+    private String listCalendarEventsForDeletion(String message) {
+        AiDateExpressionService.DateSelection date = dateExpressionService.resolve(message);
+        if (date == null || !date.isSingleDay()) {
+            return "삭제할 일정의 날짜를 알려주세요. 예: `내일 일정 삭제`";
+        }
+        List<CalendarEvent> events = calendarEventService.findBetween(date.start(), date.end()).stream()
+                .sorted(Comparator.comparing(CalendarEvent::getStartTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+        if (events.isEmpty()) return "등록된 일정이 없습니다.";
+
+        StringBuilder answer = new StringBuilder(date.expression())
+                .append(" (").append(date.start()).append(") 일정입니다. ")
+                .append(DELETE_CHOICE_PROMPT).append("\n\n");
+        for (int index = 0; index < events.size(); index++) {
+            CalendarEvent event = events.get(index);
+            String time = event.getStartTime() == null ? "시간 미정" : event.getStartTime().toString();
+            if (event.getEndTime() != null) time += "-" + event.getEndTime();
+            answer.append(index + 1).append(". [").append(time).append("](#/calendar?eventId=")
+                    .append(event.getEventId()).append(") ")
+                    .append(event.getEventTitle() == null ? "(제목 없음)"
+                            : event.getEventTitle().replaceAll("\\R", " ")).append('\n');
+        }
+        return answer.toString().trim();
+    }
+
+    private String deleteSelectedCalendarEvent(String message, List<AiMessage> history) {
+        if (history == null || history.isEmpty()) return null;
+        Matcher choice = DELETE_CHOICE.matcher(message);
+        if (!choice.matches()) return null;
+
+        String prompt = null;
+        int promptIndex = -1;
+        for (int index = history.size() - 1; index >= 0; index--) {
+            AiMessage previous = history.get(index);
+            if ("exception".equals(previous.getRole())) return null;
+            if ("assistant".equals(previous.getRole())) {
+                prompt = previous.getContent();
+                promptIndex = index;
+                break;
+            }
+        }
+        if (prompt == null || !prompt.contains(DELETE_CHOICE_PROMPT)) return null;
+        Matcher date = DELETE_DATE.matcher(prompt);
+        if (!date.find()) return null;
+
+        boolean requestedDeletion = false;
+        for (int index = promptIndex - 1; index >= 0; index--) {
+            AiMessage previous = history.get(index);
+            if ("user".equals(previous.getRole())) {
+                if (intentService.detect(previous.getContent()) == AiIntentService.Intent.CALENDAR_DELETE) {
+                    requestedDeletion = true;
+                    break;
+                }
+                if (!DELETE_CHOICE.matcher(previous.getContent()).matches()) return null;
+            } else if ("assistant".equals(previous.getRole())
+                    && !previous.getContent().contains(DELETE_CHOICE_PROMPT)) {
+                return null;
+            }
+        }
+        if (!requestedDeletion) return null;
+
+        Matcher item = DELETE_ITEM.matcher(prompt);
+        Long eventId = null;
+        while (item.find()) {
+            if (item.group(1).equals(choice.group(1))) {
+                eventId = Long.valueOf(item.group(2));
+                break;
+            }
+        }
+        if (eventId == null) return "목록에 있는 번호를 선택해 주세요.\n\n" + prompt;
+
+        CalendarEvent selected;
+        try {
+            selected = calendarEventService.findById(eventId);
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode() != HttpStatus.NOT_FOUND) throw exception;
+            return "선택한 일정이 더 이상 존재하지 않습니다. 다시 목록을 조회해 주세요.";
+        }
+        if (!LocalDate.parse(date.group(1)).equals(selected.getEventDate())) {
+            return "선택한 일정의 날짜가 변경되었습니다. 다시 목록을 조회해 주세요.";
+        }
+        calendarEventService.delete(eventId);
+        return "'%s' 일정을 삭제했습니다.".formatted(selected.getEventTitle());
     }
 
     private String createCalendarEvent(String message) {

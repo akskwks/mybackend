@@ -20,6 +20,7 @@ public class AiIntentService {
         boolean delete = containsAny(text, "삭제", "지워", "제거");
         boolean workIsTarget = work && (!project || text.lastIndexOf("업무") > text.lastIndexOf("프로젝트"));
 
+        if (calendar && delete) return Intent.CALENDAR_DELETE;
         if (calendar && (create || text.contains("잡아"))) {
             return Intent.CALENDAR_CREATE;
         }
@@ -119,6 +120,7 @@ public class AiIntentService {
         GENERAL_CHAT,
         CALENDAR_QUERY,
         CALENDAR_CREATE,
+        CALENDAR_DELETE,
         MEMO_SEARCH,
         MEMO_SUMMARY,
         PROJECT_LIST_QUERY,

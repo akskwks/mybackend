@@ -22,6 +22,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 class AiAssistantServiceTests {
     private final CalendarEventService calendar = mock(CalendarEventService.class);
@@ -80,5 +82,64 @@ class AiAssistantServiceTests {
         assertTrue(answer.contains("어제 기록"));
         assertFalse(answer.contains("오늘 기록"));
         assertEquals("그저께 작성된 메모가 없습니다.", assistant.respond("그저께 메모", List.of()));
+    }
+
+    @Test
+    void calendarDeletionListsTomorrowEventsInTimeOrderAndDeletesSelectedId() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        CalendarEvent afternoon = calendarEvent(11L, tomorrow, 14, "프로젝트 회의");
+        CalendarEvent morning = calendarEvent(12L, tomorrow, 9, "자료 정리");
+        when(calendar.findBetween(tomorrow, tomorrow)).thenReturn(List.of(afternoon, morning));
+        when(calendar.findById(12L)).thenReturn(morning);
+
+        String prompt = assistant.respond("내일 일정 삭제", List.of());
+        assertTrue(prompt.indexOf("1. [09:00") < prompt.indexOf("2. [14:00"));
+        assertTrue(prompt.contains("프로젝트 회의"));
+        var history = List.of(userMessage("내일 일정 삭제"), assistantMessage(prompt));
+        assertEquals("목록에 있는 번호를 선택해 주세요.\n\n" + prompt,
+                assistant.respond("3", history));
+        verify(calendar, never()).delete(any());
+
+        var retryHistory = List.of(userMessage("내일 일정 삭제"), assistantMessage(prompt),
+                userMessage("3"), assistantMessage("목록에 있는 번호를 선택해 주세요.\n\n" + prompt));
+
+        assertEquals("'자료 정리' 일정을 삭제했습니다.",
+                assistant.respond("1번", retryHistory));
+        verify(calendar).delete(12L);
+        verify(calendar, never()).delete(11L);
+        verifyNoInteractions(ollama);
+    }
+
+    @Test
+    void calendarDeletionWithNoEventsReturnsEmptyMessage() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        when(calendar.findBetween(tomorrow, tomorrow)).thenReturn(List.of());
+
+        assertEquals("등록된 일정이 없습니다.", assistant.respond("내일 일정 삭제", List.of()));
+        verify(calendar, never()).delete(any());
+    }
+
+    private CalendarEvent calendarEvent(Long id, LocalDate date, int hour, String title) {
+        CalendarEvent event = new CalendarEvent();
+        event.setEventId(id);
+        event.setEventDate(date);
+        event.setStartTime(java.time.LocalTime.of(hour, 0));
+        event.setEndTime(java.time.LocalTime.of(hour + 1, 0));
+        event.setEventTitle(title);
+        return event;
+    }
+
+    private com.app.mybackend.aichat.entity.AiMessage assistantMessage(String content) {
+        var message = new com.app.mybackend.aichat.entity.AiMessage();
+        message.setRole("assistant");
+        message.setContent(content);
+        return message;
+    }
+
+    private com.app.mybackend.aichat.entity.AiMessage userMessage(String content) {
+        var message = new com.app.mybackend.aichat.entity.AiMessage();
+        message.setRole("user");
+        message.setContent(content);
+        return message;
     }
 }

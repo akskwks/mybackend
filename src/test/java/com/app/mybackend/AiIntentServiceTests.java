@@ -40,6 +40,10 @@ class AiIntentServiceTests {
                 service.detect("내근 MyApp 프로젝트 추가해줘"));
         assertEquals(Intent.WORK_CREATE,
                 service.detect("MyApp 프로젝트에 개발 업무 추가해줘"));
+        assertEquals(Intent.CALENDAR_DELETE,
+                service.detect("내일 프로젝트 회의 일정 삭제"));
+        assertEquals(Intent.CALENDAR_DELETE,
+                service.detect("내일 일정 삭제"));
     }
 
     @Test

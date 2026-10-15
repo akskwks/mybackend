@@ -47,6 +47,10 @@ public class CalendarEventService {
         repository.delete(requireEvent(eventId));
     }
 
+    public CalendarEvent findById(Long eventId) {
+        return requireEvent(eventId);
+    }
+
     private CalendarEvent requireEvent(Long eventId) {
         return repository.findByEventIdAndUserNum(eventId, currentUser.number())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다."));
