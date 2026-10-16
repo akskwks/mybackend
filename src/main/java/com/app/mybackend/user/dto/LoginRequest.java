@@ -1,4 +1,7 @@
 package com.app.mybackend.user.dto;
 
-public record LoginRequest(String userId, String password) {
+public record LoginRequest(
+        String userId,
+        String password
+) {
 }

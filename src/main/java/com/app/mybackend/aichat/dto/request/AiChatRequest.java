@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record AiChatRequest(
-
         Long conversationId,
 
         @NotBlank(message = "질문은 필수입니다.")

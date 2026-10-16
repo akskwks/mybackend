@@ -62,6 +62,7 @@ public class AiAssistantService {
         if (projectWorkAssistant.supports(intent)) {
             return projectWorkAssistant.respond(intent, message, history);
         }
+
         return switch (intent) {
             case CALENDAR_QUERY -> answerCalendarQuery(message);
             case CALENDAR_CREATE -> createCalendarEvent(message);
@@ -79,7 +80,9 @@ public class AiAssistantService {
             LocalDate today = LocalDate.now();
             range = new AiDateExpressionService.DateSelection(today, today, "오늘");
         }
+
         List<CalendarEvent> events = calendarEventService.findBetween(range.start(), range.end());
+
         if (events.isEmpty()) {
             String label = range.expression();
             if (label.matches("20\\d{2}[-./].*|\\d{1,2}월.*")) label += "에";
@@ -90,10 +93,12 @@ public class AiAssistantService {
             return "%s 일정은 %s가 예정되어 있습니다.".formatted(
                     range.expression(), formatCalendarEvent(events.get(0), !range.isSingleDay()));
         }
+
         StringBuilder answer = new StringBuilder(range.expression()).append(" 일정은 다음과 같습니다.\n\n");
         for (CalendarEvent event : events) {
             answer.append("- ").append(formatCalendarEvent(event, !range.isSingleDay())).append('\n');
         }
+
         return answer.toString().trim();
     }
 
@@ -102,11 +107,13 @@ public class AiAssistantService {
         if (includeDate && event.getEventDate() != null) {
             item.append(event.getEventDate()).append(' ');
         }
+
         if (event.getStartTime() != null) {
             item.append(event.getStartTime());
             if (event.getEndTime() != null) item.append('-').append(event.getEndTime());
             item.append(' ');
         }
+
         return item.append(event.getEventTitle()).toString();
     }
 
@@ -115,6 +122,7 @@ public class AiAssistantService {
         if (date == null || !date.isSingleDay()) {
             return "삭제할 일정의 날짜를 알려주세요. 예: `내일 일정 삭제`";
         }
+
         List<CalendarEvent> events = calendarEventService.findBetween(date.start(), date.end()).stream()
                 .sorted(Comparator.comparing(CalendarEvent::getStartTime,
                         Comparator.nullsLast(Comparator.naturalOrder())))
@@ -124,6 +132,7 @@ public class AiAssistantService {
         StringBuilder answer = new StringBuilder(date.expression())
                 .append(" (").append(date.start()).append(") 일정입니다. ")
                 .append(DELETE_CHOICE_PROMPT).append("\n\n");
+
         for (int index = 0; index < events.size(); index++) {
             CalendarEvent event = events.get(index);
             String time = event.getStartTime() == null ? "시간 미정" : event.getStartTime().toString();
@@ -133,6 +142,7 @@ public class AiAssistantService {
                     .append(event.getEventTitle() == null ? "(제목 없음)"
                             : event.getEventTitle().replaceAll("\\R", " ")).append('\n');
         }
+
         return answer.toString().trim();
     }
 
@@ -152,7 +162,9 @@ public class AiAssistantService {
                 break;
             }
         }
+
         if (prompt == null || !prompt.contains(DELETE_CHOICE_PROMPT)) return null;
+
         Matcher date = DELETE_DATE.matcher(prompt);
         if (!date.find()) return null;
 
@@ -170,6 +182,7 @@ public class AiAssistantService {
                 return null;
             }
         }
+
         if (!requestedDeletion) return null;
 
         Matcher item = DELETE_ITEM.matcher(prompt);
@@ -180,6 +193,7 @@ public class AiAssistantService {
                 break;
             }
         }
+
         if (eventId == null) return "목록에 있는 번호를 선택해 주세요.\n\n" + prompt;
 
         CalendarEvent selected;
@@ -189,10 +203,12 @@ public class AiAssistantService {
             if (exception.getStatusCode() != HttpStatus.NOT_FOUND) throw exception;
             return "선택한 일정이 더 이상 존재하지 않습니다. 다시 목록을 조회해 주세요.";
         }
+
         if (!LocalDate.parse(date.group(1)).equals(selected.getEventDate())) {
             return "선택한 일정의 날짜가 변경되었습니다. 다시 목록을 조회해 주세요.";
         }
         calendarEventService.delete(eventId);
+
         return "'%s' 일정을 삭제했습니다.".formatted(selected.getEventTitle());
     }
 
@@ -226,6 +242,7 @@ public class AiAssistantService {
                 category.equals("work") ? "blue" : "green",
                 "AI 채팅에서 등록한 일정"
         ));
+
         return "일정을 등록했습니다.\n\n- **제목:** %s\n- **날짜:** %s\n- **시간:** %s - %s"
                 .formatted(event.getEventTitle(), event.getEventDate(), event.getStartTime(), event.getEndTime());
     }
@@ -252,6 +269,7 @@ public class AiAssistantService {
                     .append(memo.getMemoSort()).append("`) — ")
                     .append(shorten(stripHtml(memo.getMemoCnnt()), 100)).append('\n');
         }
+
         return result.toString().trim();
     }
 
@@ -272,6 +290,7 @@ public class AiAssistantService {
                 ))
                 .reduce((left, right) -> left + "\n\n" + right)
                 .orElse("");
+
         return askOllama(message, history, "[메모 데이터]\n" + data);
     }
 
@@ -286,11 +305,13 @@ public class AiAssistantService {
         AiDateExpressionService.DateSelection selection = dateExpressionService.resolve(message);
         LocalDate start = selection == null ? LocalDate.now() : selection.start();
         LocalDate end = selection == null ? start : selection.end();
+
         return new DateTimeRange(start.atStartOfDay(), end.plusDays(1).atStartOfDay());
     }
 
     private LocalDate parseDate(String message) {
         AiDateExpressionService.DateSelection selection = dateExpressionService.resolve(message);
+
         return selection != null && selection.isSingleDay() ? selection.start() : null;
     }
 
