@@ -7,6 +7,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+*
+* 클래스명 : AiPromptService
+* 역할 : AI 시스템 프롬프트와 대화 문맥 프롬프트를 구성하는 서비스
+* 생성일 : 2026-09-17
+*
+**/
 @Service
 public class AiPromptService {
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");

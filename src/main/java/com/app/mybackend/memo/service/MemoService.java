@@ -11,6 +11,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+*
+* 클래스명 : MemoService
+* 역할 : 사용자별 메모 검색, 조회, 등록, 수정, 삭제를 처리하는 서비스
+* 생성일 : 2026-09-17
+*
+**/
 @Service
 public class MemoService {
     private final MemoRepository repository;

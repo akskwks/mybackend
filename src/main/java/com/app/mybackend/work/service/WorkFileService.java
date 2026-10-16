@@ -18,6 +18,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+/**
+*
+* 클래스명 : WorkFileService
+* 역할 : 업무 첨부파일 메타데이터 조회, 저장, 삭제를 관리하는 서비스
+* 생성일 : 2026-09-21
+*
+**/
 @Service
 @RequiredArgsConstructor
 public class WorkFileService {

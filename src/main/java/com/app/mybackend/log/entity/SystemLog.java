@@ -6,6 +6,13 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
+/**
+*
+* 클래스명 : SystemLog
+* 역할 : API 호출 감사 이력과 요청·응답 정보를 나타내는 JPA 엔티티
+* 생성일 : 2026-10-15
+*
+**/
 @Entity
 @Getter
 @Setter

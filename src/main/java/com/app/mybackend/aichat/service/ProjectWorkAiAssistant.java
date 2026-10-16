@@ -21,6 +21,13 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+*
+* 클래스명 : ProjectWorkAiAssistant
+* 역할 : 프로젝트·업무 자연어 요청을 해석하고 조회·변경 결과를 응답하는 서비스
+* 생성일 : 2026-09-28
+*
+**/
 @Service
 @RequiredArgsConstructor
 public class ProjectWorkAiAssistant {

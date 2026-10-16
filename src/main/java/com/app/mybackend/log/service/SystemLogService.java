@@ -16,6 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 
+/**
+*
+* 클래스명 : SystemLogService
+* 역할 : API 감사 로그 기록과 관리자용 검색·상세 조회를 처리하는 서비스
+* 생성일 : 2026-10-15
+*
+**/
 @Service
 @RequiredArgsConstructor
 public class SystemLogService {

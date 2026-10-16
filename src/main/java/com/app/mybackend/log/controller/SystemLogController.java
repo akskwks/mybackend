@@ -7,6 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
+/**
+*
+* 클래스명 : SystemLogController
+* 역할 : 관리자 전용 감사 로그 목록·상세 조회 API를 제공하는 컨트롤러
+* 생성일 : 2026-10-15
+*
+**/
 @RestController
 @RequestMapping("/api/logs")
 @RequiredArgsConstructor

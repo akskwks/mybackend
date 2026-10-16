@@ -6,6 +6,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+*
+* 클래스명 : AiChatExceptionHandler
+* 역할 : AI 채팅 예외를 클라이언트 오류 응답으로 변환하는 처리기
+* 생성일 : 2026-09-17
+*
+**/
 @RestControllerAdvice(basePackages = "com.app.mybackend.aichat")
 public class AiChatExceptionHandler {
 

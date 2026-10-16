@@ -8,6 +8,13 @@ import java.time.YearMonth;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+*
+* 클래스명 : AiDateExpressionService
+* 역할 : 자연어의 상대 날짜와 기간 표현을 실제 날짜 범위로 변환하는 서비스
+* 생성일 : 2026-10-07
+*
+**/
 @Service
 public class AiDateExpressionService {
     private static final Pattern ISO_DATE = Pattern.compile("20\\d{2}[-./]\\d{1,2}[-./]\\d{1,2}");

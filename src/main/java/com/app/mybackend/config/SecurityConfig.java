@@ -14,6 +14,13 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 
+/**
+*
+* 클래스명 : SecurityConfig
+* 역할 : 인증, 권한 및 보안 필터 체인을 설정하는 구성 클래스
+* 생성일 : 2026-10-14
+*
+**/
 @Configuration
 public class SecurityConfig {
     @Bean

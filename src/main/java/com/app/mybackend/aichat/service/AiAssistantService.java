@@ -20,6 +20,13 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+*
+* 클래스명 : AiAssistantService
+* 역할 : AI 요청을 일반 대화 또는 내부 기능 처리로 연결하는 서비스
+* 생성일 : 2026-09-17
+*
+**/
 @Service
 public class AiAssistantService {
     private static final Pattern TIME = Pattern.compile("(오전|오후)?\\s*(\\d{1,2})\\s*시(?:\\s*(\\d{1,2})\\s*분)?");

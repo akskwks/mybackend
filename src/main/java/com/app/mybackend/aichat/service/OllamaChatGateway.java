@@ -14,6 +14,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+*
+* 클래스명 : OllamaChatGateway
+* 역할 : Ollama 모델에 프롬프트를 전달하고 생성된 답변을 받는 연동 서비스
+* 생성일 : 2026-09-17
+*
+**/
 @Service
 public class OllamaChatGateway {
     private final ChatClient chatClient;

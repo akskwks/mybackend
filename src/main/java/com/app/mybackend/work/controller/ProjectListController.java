@@ -8,6 +8,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+*
+* 클래스명 : ProjectListController
+* 역할 : 프로젝트 목록 및 등록, 수정, 삭제 API를 제공하는 컨트롤러
+* 생성일 : 2026-09-18
+*
+**/
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor

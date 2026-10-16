@@ -3,6 +3,13 @@ package com.app.mybackend.aichat.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+*
+* 클래스명 : AiChatRequest
+* 역할 : AI 대화방 식별자와 사용자 질문을 전달하는 요청 DTO
+* 생성일 : 2026-09-17
+*
+**/
 public record AiChatRequest(
         Long conversationId,
 

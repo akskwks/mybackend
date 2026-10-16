@@ -6,6 +6,13 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+*
+* 클래스명 : Memo
+* 역할 : 사용자 메모의 제목, 분류, 내용, 수정일을 나타내는 JPA 엔티티
+* 생성일 : 2026-09-17
+*
+**/
 @Entity
 @Getter
 @Setter

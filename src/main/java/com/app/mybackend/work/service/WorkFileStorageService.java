@@ -17,6 +17,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+/**
+*
+* 클래스명 : WorkFileStorageService
+* 역할 : 업무 첨부파일의 저장, 읽기, 삭제를 파일 시스템에서 처리하는 서비스
+* 생성일 : 2026-09-21
+*
+**/
 @Service
 public class WorkFileStorageService {
 

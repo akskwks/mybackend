@@ -6,6 +6,13 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Locale;
 
+/**
+*
+* 클래스명 : AiIntentService
+* 역할 : 사용자 메시지의 요청 의도를 분류하는 서비스
+* 생성일 : 2026-09-17
+*
+**/
 @Service
 public class AiIntentService {
 

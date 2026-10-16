@@ -9,6 +9,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+*
+* 클래스명 : MemoRepository
+* 역할 : 사용자별 메모 검색과 기간별 조회를 수행하는 JPA 저장소
+* 생성일 : 2026-09-17
+*
+**/
 public interface MemoRepository extends JpaRepository<Memo, Long> {
     List<Memo> findByUserNumAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanOrderByUpdatedAtDesc(
             Long userNum,

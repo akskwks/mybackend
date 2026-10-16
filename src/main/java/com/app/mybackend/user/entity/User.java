@@ -6,6 +6,13 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+*
+* 클래스명 : User
+* 역할 : 로그인 정보와 권한을 보관하는 사용자 JPA 엔티티
+* 생성일 : 2026-10-14
+*
+**/
 @Entity
 @Getter
 @Setter

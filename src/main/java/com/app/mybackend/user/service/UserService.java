@@ -10,6 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+*
+* 클래스명 : UserService
+* 역할 : 사용자 등록, 비밀번호 확인 및 사용자 조회를 처리하는 서비스
+* 생성일 : 2026-10-14
+*
+**/
 @Service
 @RequiredArgsConstructor
 public class UserService {

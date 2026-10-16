@@ -8,6 +8,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 
+/**
+*
+* 클래스명 : ProjectList
+* 역할 : 근무 환경, 기간, 진행 상태를 포함한 프로젝트 JPA 엔티티
+* 생성일 : 2026-09-18
+*
+**/
 @Entity
 @Getter
 @Setter

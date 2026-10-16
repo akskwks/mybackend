@@ -25,6 +25,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 
+/**
+*
+* 클래스명 : UserController
+* 역할 : 회원가입, 로그인, 로그아웃 및 현재 사용자 조회 API를 제공하는 컨트롤러
+* 생성일 : 2026-10-14
+*
+**/
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor

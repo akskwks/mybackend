@@ -11,6 +11,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+*
+* 클래스명 : CalendarEventService
+* 역할 : 사용자별 일정 조회와 일정 등록, 수정, 삭제를 처리하는 서비스
+* 생성일 : 2026-09-17
+*
+**/
 @Service
 public class CalendarEventService {
     private final CalendarEventRepository repository;

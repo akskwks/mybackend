@@ -7,6 +7,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+*
+* 클래스명 : SystemLogRepository
+* 역할 : 감사 로그를 검색하고 저장하는 JPA 저장소
+* 생성일 : 2026-10-15
+*
+**/
 public interface SystemLogRepository extends JpaRepository<SystemLog, Long> {
     @Query(value = """
             SELECT l FROM SystemLog l LEFT JOIN FETCH l.user u

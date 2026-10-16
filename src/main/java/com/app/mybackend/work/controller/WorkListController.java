@@ -14,6 +14,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+*
+* 클래스명 : WorkListController
+* 역할 : 프로젝트별 업무와 첨부파일 목록 및 업무 CRUD API를 제공하는 컨트롤러
+* 생성일 : 2026-09-18
+*
+**/
 @RestController
 @RequestMapping("/api/works")
 @RequiredArgsConstructor

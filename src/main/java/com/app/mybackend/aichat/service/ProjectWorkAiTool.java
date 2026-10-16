@@ -14,6 +14,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+*
+* 클래스명 : ProjectWorkAiTool
+* 역할 : AI가 프로젝트와 업무 기능을 서비스 계층을 통해 호출하도록 연결하는 도구
+* 생성일 : 2026-09-28
+*
+**/
 @Service
 @RequiredArgsConstructor
 public class ProjectWorkAiTool {

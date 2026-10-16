@@ -25,6 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+*
+* 클래스명 : AiChatController
+* 역할 : AI 대화방 관리와 비동기 채팅 API를 제공하는 컨트롤러
+* 생성일 : 2026-09-17
+*
+**/
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor

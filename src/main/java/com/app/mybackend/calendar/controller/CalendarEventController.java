@@ -7,6 +7,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+*
+* 클래스명 : CalendarEventController
+* 역할 : 캘린더 일정 목록 및 등록, 수정, 삭제 API를 제공하는 컨트롤러
+* 생성일 : 2026-09-17
+*
+**/
 @RestController
 @RequestMapping("/api/calendar/events")
 public class CalendarEventController {

@@ -13,6 +13,13 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+*
+* 클래스명 : AiConversationService
+* 역할 : 사용자별 AI 대화방과 메시지 이력을 관리하는 서비스
+* 생성일 : 2026-09-17
+*
+**/
 @Service
 public class AiConversationService {
     private static final String DEFAULT_TITLE = "새 대화";

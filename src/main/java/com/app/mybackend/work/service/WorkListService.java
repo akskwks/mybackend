@@ -14,6 +14,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
+/**
+*
+* 클래스명 : WorkListService
+* 역할 : 프로젝트별 업무 조회와 업무·첨부파일의 등록, 수정, 삭제를 처리하는 서비스
+* 생성일 : 2026-09-18
+*
+**/
 @Service
 @RequiredArgsConstructor
 public class WorkListService {

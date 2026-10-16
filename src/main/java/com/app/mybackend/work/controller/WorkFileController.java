@@ -12,6 +12,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+*
+* 클래스명 : WorkFileController
+* 역할 : 업무 첨부파일 조회, 다운로드, 삭제 API를 제공하는 컨트롤러
+* 생성일 : 2026-09-21
+*
+**/
 @RestController
 @RequestMapping("/api/work-files")
 @RequiredArgsConstructor

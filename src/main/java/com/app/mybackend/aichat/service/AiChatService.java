@@ -7,6 +7,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+*
+* 클래스명 : AiChatService
+* 역할 : AI 대화 요청 준비, 답변 생성 및 메시지 저장을 처리하는 서비스
+* 생성일 : 2026-09-17
+*
+**/
 @Service
 public class AiChatService {
 

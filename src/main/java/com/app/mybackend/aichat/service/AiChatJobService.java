@@ -18,6 +18,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+/**
+*
+* 클래스명 : AiChatJobService
+* 역할 : 비동기 AI 답변 작업의 시작, 상태 조회, 취소를 관리하는 서비스
+* 생성일 : 2026-09-28
+*
+**/
 @Service
 public class AiChatJobService {
 

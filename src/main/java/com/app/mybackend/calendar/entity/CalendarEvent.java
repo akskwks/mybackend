@@ -8,6 +8,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+/**
+*
+* 클래스명 : CalendarEvent
+* 역할 : 일정 날짜와 시간, 제목, 분류를 나타내는 JPA 엔티티
+* 생성일 : 2026-09-17
+*
+**/
 @Entity
 @Getter
 @Setter

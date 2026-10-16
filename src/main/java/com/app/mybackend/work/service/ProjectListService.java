@@ -13,6 +13,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Set;
 
+/**
+*
+* 클래스명 : ProjectListService
+* 역할 : 프로젝트 조회, 등록, 수정, 삭제와 하위 업무 관계를 관리하는 서비스
+* 생성일 : 2026-09-18
+*
+**/
 @Service
 @RequiredArgsConstructor
 public class ProjectListService {

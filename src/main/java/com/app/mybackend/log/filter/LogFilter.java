@@ -28,6 +28,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+/**
+*
+* 클래스명 : LogFilter
+* 역할 : 지정된 CRUD API의 요청과 응답을 감사 로그로 기록하는 보안 필터
+* 생성일 : 2026-10-15
+*
+**/
 @Component
 @RequiredArgsConstructor
 public class LogFilter extends OncePerRequestFilter {

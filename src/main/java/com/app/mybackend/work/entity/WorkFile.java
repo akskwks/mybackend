@@ -6,6 +6,13 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+*
+* 클래스명 : WorkFile
+* 역할 : 업무에 첨부된 파일의 메타데이터를 나타내는 JPA 엔티티
+* 생성일 : 2026-09-21
+*
+**/
 @Entity
 @Getter
 @Setter

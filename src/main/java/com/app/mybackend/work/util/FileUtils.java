@@ -9,6 +9,13 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+*
+* 클래스명 : FileUtils
+* 역할 : 첨부파일 이름, 확장자, MIME 유형 및 저장 경로를 안전하게 처리하는 유틸리티
+* 생성일 : 2026-09-21
+*
+**/
 public final class FileUtils {
 
     private static final String DEFAULT_MIME_TYPE = "application/octet-stream";

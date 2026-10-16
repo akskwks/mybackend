@@ -12,6 +12,13 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+*
+* 클래스명 : AiMessage
+* 역할 : AI 대화방에 속한 사용자·AI 메시지를 나타내는 JPA 엔티티
+* 생성일 : 2026-09-17
+*
+**/
 @Entity
 @Getter
 @Setter

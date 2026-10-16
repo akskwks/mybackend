@@ -8,6 +8,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+*
+* 클래스명 : MemoController
+* 역할 : 메모 목록, 상세 및 등록, 수정, 삭제 API를 제공하는 컨트롤러
+* 생성일 : 2026-09-17
+*
+**/
 @RestController
 @RequestMapping("/api/memos")
 @RequiredArgsConstructor

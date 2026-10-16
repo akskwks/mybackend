@@ -7,6 +7,13 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+*
+* 클래스명 : WorkList
+* 역할 : 프로젝트에 속한 업무 정보와 진행 상태를 나타내는 JPA 엔티티
+* 생성일 : 2026-09-18
+*
+**/
 @Entity
 @Getter
 @Setter
